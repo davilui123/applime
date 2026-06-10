@@ -6,12 +6,13 @@
   --applime-dark-purple: #270A33;
   --applime-eggplant: #451A3E;
 
-  /* Aplicação Semântica Base */
-  --bg-main: var(--applime-dark-purple);
-  --bg-surface: var(--applime-eggplant);
-  --text-main: #FFFFFF;
-  --text-muted: var(--applime-sage);
-  --accent: var(--applime-mint);
+  /* Cores de Sistema - Estilo App Store / Google Play */
+  --bg-main: #F4F6F6;           /* Cinzinha claro de fundo */
+  --bg-surface: #FFFFFF;        /* Cards e janelas totalmente brancas */
+  --text-main: var(--applime-dark-purple); /* Textos principais no roxo profundo */
+  --text-muted: #5F7375;        /* Subtítulos e descrições */
+  --accent: var(--applime-ocean);
+  --border-light: rgba(61, 123, 128, 0.12);
 }
 
 * {
@@ -25,4 +26,16 @@ body {
   background-color: var(--bg-main);
   color: var(--text-main);
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Animações fluidas de conversão (iguais às das imagens que você mandou) */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
