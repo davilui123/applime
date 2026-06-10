@@ -1,0 +1,41 @@
+:root {
+  /* Paleta Oficial Applime */
+  --applime-mint: #B1E6D1;
+  --applime-sage: #77B1A9;
+  --applime-ocean: #3D7B80;
+  --applime-dark-purple: #270A33;
+  --applime-eggplant: #451A3E;
+
+  /* Cores de Sistema - Estilo App Store / Google Play */
+  --bg-main: #F4F6F6;           /* Cinzinha claro de fundo */
+  --bg-surface: #FFFFFF;        /* Cards e janelas totalmente brancas */
+  --text-main: var(--applime-dark-purple); /* Textos principais no roxo profundo */
+  --text-muted: #5F7375;        /* Subtítulos e descrições */
+  --accent: var(--applime-ocean);
+  --border-light: rgba(61, 123, 128, 0.12);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Animações fluidas de conversão (iguais às das imagens que você mandou) */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}

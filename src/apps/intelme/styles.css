@@ -1,0 +1,211 @@
+/* ---- CONTEXTO ESCURO NATIVO DO INTELME ---- */
+.intelme-container {
+  background-color: #1C2132;
+  min-height: 100vh;
+  color: #F1F5F9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  animation: fadeIn 0.25s ease;
+  padding-bottom: 80px;
+}
+
+.intelme-content {
+  max-width: 450px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* Barra de Navegação Superior */
+.back-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 0 4px;
+  cursor: pointer;
+  color: #60A5FA;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+/* Balão do Intel e Ofensiva */
+.intel-header {
+  background: #252B3B;
+  border-radius: 14px;
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.intel-mascot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.intel-mini {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #B1E6D1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.mascot-bubble {
+  background: #1C2132;
+  border-radius: 12px;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  color: #94A3B8;
+  max-width: 200px;
+  line-height: 1.4;
+}
+
+.streak-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(251, 191, 36, 0.1);
+  color: #FBBF24;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+/* Títulos */
+.intel-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #F1F5F9;
+  margin: 14px 0 2px;
+}
+
+.intel-sub {
+  font-size: 0.78rem;
+  color: #94A3B8;
+  margin-bottom: 18px;
+}
+
+/* Alternador de Abas (Tabs) */
+.intel-tabs {
+  display: flex;
+  gap: 4px;
+  background: #252B3B;
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.intel-tab {
+  flex: 1;
+  padding: 7px 0;
+  border-radius: 7px;
+  border: none;
+  background: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #94A3B8;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.intel-tab.active {
+  background: #3D7B80;
+  color: #FFFFFF;
+}
+
+/* Botão Recapitulando */
+.recap-btn {
+  width: 100%;
+  padding: 13px;
+  border-radius: 14px;
+  border: 1.5px dashed #77B1A9;
+  background: none;
+  color: #60A5FA;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Cards das Trilhas */
+.track-card {
+  background: #252B3B;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.track-card:active {
+  transform: scale(0.99);
+}
+
+.track-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.track-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.track-emoji {
+  font-size: 1.5rem;
+}
+
+.track-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #F1F5F9;
+}
+
+.track-desc {
+  font-size: 0.75rem;
+  color: #94A3B8;
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+.level-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(96, 165, 250, 0.1);
+  color: #60A5FA;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 5px;
+  background: #1C2132;
+  border-radius: 3px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #77B1A9, #3
