@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 
 // ─── PALETA INTELME ───────────────────────────────────────────────────────────
 const C = {
@@ -35,16 +35,105 @@ const QUOTES = [
   '"Errar aqui é aprender com custo baixo!"',
 ];
 
+// ─── STREAK: PERSISTÊNCIA E CÁLCULO POR DATA ─────────────────────────────────
+// Guardado localmente por enquanto (localStorage). Estrutura pronta pra trocar
+// por Supabase depois: é só substituir loadProgress/saveProgress por
+// select/upsert numa tabela `intelme_progress` chaveada por usuário.
+const STORAGE_KEY = 'intelme_progress_v1';
+const MIN_LESSONS_PER_DAY = 2; // mínimo de aulas/dia (qualquer trilha) pra manter o streak geral
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function shiftKey(key, delta) {
+  const [y, m, d] = key.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + delta);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
+// Conta dias consecutivos (terminando hoje ou ontem — dá a "graça" de não
+// zerar o streak até o dia realmente virar sem cumprir a meta) dentro de um
+// Set de datas ('YYYY-MM-DD') que já bateram o critério.
+function computeStreak(metDatesSet) {
+  const today = todayKey();
+  let cursor = metDatesSet.has(today) ? today : shiftKey(today, -1);
+  if (!metDatesSet.has(cursor)) return 0;
+  let n = 0;
+  while (metDatesSet.has(cursor)) {
+    n++;
+    cursor = shiftKey(cursor, -1);
+  }
+  return n;
+}
+
+function defaultProgress() {
+  return {
+    dailyCounts: {}, // '2026-07-01': 3  → nº de aulas concluídas naquele dia (qualquer trilha)
+    trackDates: {}, // { astrofisica: { '2026-07-01': true } } → dias em que a trilha foi tocada
+    completedModules: ['d1'], // seed compatível com o estado estático original (d1 já estava "completed")
+    xp: 340,
+  };
+}
+
+function loadProgress() {
+  if (typeof window === 'undefined') return defaultProgress();
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultProgress();
+    const parsed = JSON.parse(raw);
+    return {
+      dailyCounts: parsed.dailyCounts || {},
+      trackDates: parsed.trackDates || {},
+      completedModules: Array.isArray(parsed.completedModules) ? parsed.completedModules : ['d1'],
+      xp: typeof parsed.xp === 'number' ? parsed.xp : 340,
+    };
+  } catch {
+    return defaultProgress();
+  }
+}
+
+function saveProgress(state) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // localStorage indisponível (modo privado, quota etc.) — falha silenciosa, não quebra a UI
+  }
+}
+
+// ─── STATUS DINÂMICO DOS MÓDULOS ─────────────────────────────────────────────
+// Antes o `status` de cada módulo era fixo no array TRACKS e nunca mudava.
+// Agora é calculado a partir do progresso real: completo → 'completed',
+// primeiro módulo não-completo → 'current' (ou 'coming_soon' se ainda não
+// tem conteúdo pronto), o resto → 'locked'. Checkpoints não entram na regra
+// de "sem conteúdo = em breve", pra manter o comportamento original deles.
+function computeModuleStatus(modules, completedModules) {
+  let currentAssigned = false;
+  return modules.map((m) => {
+    if (completedModules.includes(m.id)) return { ...m, status: 'completed' };
+    if (!currentAssigned) {
+      currentAssigned = true;
+      if ((!m.steps || !m.steps.length) && m.type !== 'checkpoint') {
+        return { ...m, status: 'coming_soon' };
+      }
+      return { ...m, status: 'current' };
+    }
+    return { ...m, status: 'locked' };
+  });
+}
+
 // ─── CONTEÚDO DAS TRILHAS ─────────────────────────────────────────────────────
 const TRACKS = [
   {
     id: 'astrofisica', title: 'Astrofísica', emoji: '🌌',
     desc: 'Do Big Bang aos Buracos Negros com simulações interativas.',
-    level: 'Curioso Cósmico', progress: 28, streak: 3,
+    level: 'Curioso Cósmico', progress: 28,
     levels: ['Curioso Cósmico', 'Observador Estelar', 'Astrônomo Amador', 'Cosmólogo'],
     modules: [
       {
-        id: 'a1', name: 'Mecânica Celeste e Órbitas', status: 'current', type: 'interativo',
+        id: 'a1', name: 'Mecânica Celeste e Órbitas', type: 'interativo',
         steps: [
           { type: 'concept', title: 'Como uma órbita funciona?', visual: 'orbit',
             text: 'Um planeta orbita o Sol porque a <strong>gravidade</strong> puxa continuamente para o centro, mas o planeta também se move lateralmente. Esses dois efeitos combinados criam uma trajetória elíptica — nunca cai, nunca escapa.' },
@@ -59,18 +148,85 @@ const TRACKS = [
             correct: 2, explain: 'Pela 2ª Lei de Kepler: mais perto = mais rápido. Mercúrio dá uma volta em 88 dias; Netuno leva 165 anos.' },
         ],
       },
-      { id: 'a2', name: 'Fusão Estelar', status: 'locked', type: 'quiz', steps: [] },
-      { id: 'achk', name: 'Checkpoint: Gravidade Zero', status: 'locked', type: 'checkpoint', steps: [] },
+      {
+        id: 'a2', name: 'Fusão Estelar', type: 'interativo',
+        steps: [
+          { type: 'concept', title: 'Como o Sol gera energia?', visual: 'fusion',
+            text: 'No núcleo do Sol, a temperatura chega a <strong>15 milhões °C</strong> — o suficiente para vencer a repulsão elétrica entre prótons. Na <strong>cadeia próton-próton</strong>, 4 núcleos de hidrogênio se fundem em etapas até formar 1 núcleo de hélio. A massa final é levemente menor que a soma inicial — essa diferença vira energia pura, seguindo E=mc².' },
+          { type: 'mc', q: 'Por que a fusão nuclear libera tanta energia?',
+            opts: ['Porque quebra átomos em pedaços menores', 'Porque uma pequena massa é convertida em energia (E=mc²)', 'Porque libera elétrons livres', 'Porque aumenta a temperatura do gás ao redor'],
+            correct: 1, explain: 'A massa do núcleo de hélio formado é cerca de 0,7% menor que a soma das massas dos 4 prótons originais. Essa "massa perdida" vira energia — e como c² é gigantesco, mesmo pouca massa gera muita energia.' },
+          { type: 'fill', q: 'Na cadeia próton-próton, 4 núcleos de _____ se fundem, ao final do processo, em 1 núcleo de _____.',
+            blanks: ['hidrogênio', 'hélio'], words: ['hidrogênio', 'hélio', 'carbono', 'oxigênio', 'nitrogênio'],
+            explain: 'É a reação que sustenta estrelas como o Sol por bilhões de anos: hidrogênio (1 próton) vira hélio (2 prótons + 2 nêutrons), liberando energia a cada fusão.' },
+          { type: 'mc', q: 'Prótons se repelem eletricamente. O que permite que, mesmo assim, dois prótons se aproximem o suficiente para se fundirem no núcleo solar?',
+            opts: ['A gravidade supera a repulsão elétrica', 'O efeito túnel quântico', 'Um campo magnético especial', 'A alta pressão apenas'],
+            correct: 1, explain: 'Mesmo na temperatura solar, a energia térmica sozinha não bastaria para vencer a barreira elétrica clássica. É o efeito túnel quântico que permite aos prótons "atravessarem" essa barreira — com probabilidade pequena, mas suficiente dado o número gigantesco de colisões por segundo.' },
+        ],
+      },
+      {
+        id: 'a3', name: 'Buracos Negros e Horizonte de Eventos', type: 'interativo',
+        steps: [
+          { type: 'concept', title: 'O que é o horizonte de eventos?', visual: 'blackhole',
+            text: 'O <strong>horizonte de eventos</strong> é a fronteira ao redor de um buraco negro onde a velocidade de escape ultrapassa a velocidade da luz. Dentro dele, absolutamente nada — nem luz — consegue escapar. O tamanho dessa fronteira é o <strong>raio de Schwarzschild</strong>, que depende apenas da massa do buraco negro.' },
+          { type: 'mc', q: 'O que determina o tamanho do horizonte de eventos de um buraco negro?',
+            opts: ['A cor da luz emitida ao redor', 'A massa do buraco negro', 'A velocidade de rotação apenas', 'A distância até a Terra'],
+            correct: 1, explain: 'O raio de Schwarzschild é diretamente proporcional à massa: quanto mais massivo o buraco negro, maior seu horizonte de eventos. Um buraco negro com a massa do Sol teria raio de ~3 km.' },
+          { type: 'fill', q: 'Dentro do horizonte de eventos, nem a _____ consegue escapar — porque ali a velocidade de escape ultrapassa o limite máximo do universo, previsto pela teoria da _____.',
+            blanks: ['luz', 'relatividade'], words: ['luz', 'relatividade', 'gravidade', 'quântica', 'matéria'],
+            explain: 'A relatividade geral de Einstein estabelece a velocidade da luz como limite universal. Como a velocidade de escape dentro do horizonte de eventos supera esse limite, nada consegue sair — nem a luz.' },
+          { type: 'mc', q: 'Em 2019, cientistas divulgaram a primeira imagem real de um buraco negro. De qual objeto era essa imagem?',
+            opts: ['Sagittarius A*, no centro da Via Láctea', 'M87*, no centro da galáxia M87', 'Cygnus X-1', 'TON 618'],
+            correct: 1, explain: 'A imagem histórica de 2019, obtida pelo Event Horizon Telescope, mostrou a sombra do buraco negro supermassivo M87*. Sagittarius A*, o buraco negro da nossa galáxia, só teve sua imagem divulgada em 2022.' },
+        ],
+      },
+      {
+        id: 'a4', name: 'Vida e Morte das Estrelas', type: 'interativo',
+        steps: [
+          { type: 'concept', title: 'Como as estrelas nascem, vivem e morrem?', visual: 'starlife',
+            text: 'Toda estrela nasce de uma nuvem de gás que colapsa por gravidade. Na <strong>sequência principal</strong>, ela funde hidrogênio em hélio por milhões a bilhões de anos. O que acontece depois — <strong>gigante vermelha</strong>, <strong>anã branca</strong>, <strong>supernova</strong> ou até <strong>buraco negro</strong> — depende quase inteiramente de uma coisa: a massa inicial da estrela.' },
+          { type: 'mc', q: 'Qual fator determina, acima de tudo, o destino final de uma estrela?',
+            opts: ['A cor da estrela', 'A distância até outras estrelas', 'A massa inicial da estrela', 'A quantidade de planetas ao redor'],
+            correct: 2, explain: 'A massa define a pressão e temperatura no núcleo, o que determina quais reações de fusão são possíveis e como a estrela termina sua vida.' },
+          { type: 'fill', q: 'Estrelas com massa parecida com a do Sol terminam como uma _____, após passar por uma fase de _____.',
+            blanks: ['anã branca', 'gigante vermelha'], words: ['anã branca', 'gigante vermelha', 'supernova', 'buraco negro', 'estrela de nêutrons'],
+            explain: 'O Sol vai inchar e virar uma gigante vermelha em ~5 bilhões de anos, depois ejetar suas camadas externas e deixar um núcleo compacto e quente: uma anã branca do tamanho da Terra.' },
+          { type: 'mc', q: 'Estrelas com massa muito maior que a do Sol (acima de ~8 massas solares) tendem a terminar como:',
+            opts: ['Anã branca', 'Anã marrom', 'Supernova, deixando estrela de nêutrons ou buraco negro', 'Planeta gasoso'],
+            correct: 2, explain: 'Estrelas massivas fundem elementos cada vez mais pesados até o núcleo colapsar catastroficamente — uma explosão de supernova que pode deixar para trás uma estrela de nêutrons ultradensa ou, em casos extremos, um buraco negro.' },
+        ],
+      },
+      {
+        id: 'a5', name: 'Ondas Gravitacionais', type: 'interativo',
+        steps: [
+          { type: 'concept', title: 'O que são ondas gravitacionais?', visual: 'gravwave',
+            text: '<strong>Ondas gravitacionais</strong> são ondulações no próprio tecido do espaço-tempo, geradas quando massas muito grandes aceleram — como dois buracos negros orbitando e colidindo. Einstein previu sua existência em 1916, mas achava que seriam fracas demais para detectar. Cem anos depois, em 2015, o detector <strong>LIGO</strong> captou a primeira onda gravitacional direta, vinda da fusão de dois buracos negros a 1,3 bilhão de anos-luz.' },
+          { type: 'mc', q: 'O que causa uma onda gravitacional?',
+            opts: ['Estrelas brilhando mais forte', 'A aceleração de massas muito grandes, como buracos negros colidindo', 'Explosões de supernova em qualquer direção', 'Radiação eletromagnética intensa'],
+            correct: 1, explain: 'Assim como cargas elétricas aceleradas geram ondas eletromagnéticas, massas aceleradas geram ondas gravitacionais — mas só eventos extremos (fusões de buracos negros ou estrelas de nêutrons) produzem ondas fortes o bastante para detectar.' },
+          { type: 'fill', q: 'Ondas gravitacionais são ondulações no _____, previstas por Einstein na Teoria da Relatividade _____.',
+            blanks: ['espaço-tempo', 'Geral'], words: ['espaço-tempo', 'Geral', 'Restrita', 'quântica', 'universo'],
+            explain: 'A Relatividade Geral (1915) descreve a gravidade como curvatura do espaço-tempo. Massas aceleradas fazem essa curvatura "ondular" — são as ondas gravitacionais, confirmadas experimentalmente só em 2015.' },
+          { type: 'mc', q: 'O detector LIGO, responsável pela primeira detecção direta de ondas gravitacionais, funciona medindo:',
+            opts: ['Variações minúsculas de distância com lasers em túneis a vácuo', 'Emissão de rádio de galáxias distantes', 'Temperatura da radiação cósmica de fundo', 'Brilho de estrelas variáveis'],
+            correct: 0, explain: 'O LIGO usa interferômetros a laser: uma onda gravitacional passando pela Terra estica e comprime o espaço por uma fração ínfima — menor que o núcleo de um átomo! É exatamente essa distorção que os lasers detectam.' },
+        ],
+      },
+      { id: 'a6', name: 'Exoplanetas e Zonas Habitáveis', type: 'em-breve', steps: [] },
+      { id: 'a7', name: 'A Expansão Acelerada do Universo', type: 'em-breve', steps: [] },
+      { id: 'a8', name: 'Matéria Escura e Energia Escura', type: 'em-breve', steps: [] },
+      { id: 'a9', name: 'Viagem Interestelar: os Limites da Física', type: 'em-breve', steps: [] },
+      { id: 'a10', name: 'Checkpoint: Gravidade Zero', type: 'checkpoint', steps: [] },
     ],
   },
   {
     id: 'mandarin', title: 'Mandarim', emoji: '🏮',
     desc: 'Tons, Pinyin e expressões para sobrevivência e negócios.',
-    level: 'Iniciante Zero', progress: 10, streak: 0,
+    level: 'Iniciante Zero', progress: 10,
     levels: ['Iniciante Zero', 'Se Vira', 'Iniciante', 'Na Média', 'Fluente Funcional'],
     modules: [
       {
-        id: 'm1', name: 'Os 4 Tons do Mandarim', status: 'current', type: 'áudio-quiz',
+        id: 'm1', name: 'Os 4 Tons do Mandarim', type: 'áudio-quiz',
         steps: [
           { type: 'concept', title: 'Por que os tons mudam tudo?', visual: 'tones',
             text: 'No Mandarim, a mesma sílaba com tons diferentes tem <strong>significados completamente distintos</strong>. Não é entonação de emoção — é parte da própria palavra. Trocar o tom é trocar a palavra inteira.' },
@@ -82,18 +238,18 @@ const TRACKS = [
             explain: 'mā (1º tom plano) = mãe. mǎ (3º tom desce-e-sobe) = cavalo. Um tom errado muda completamente a mensagem.' },
         ],
       },
-      { id: 'mchk', name: 'Checkpoint: Sobrevivência', status: 'locked', type: 'checkpoint', steps: [] },
+      { id: 'mchk', name: 'Checkpoint: Sobrevivência', type: 'checkpoint', steps: [] },
     ],
   },
   {
     id: 'dev', title: 'Android & iOS', emoji: '📱',
     desc: 'Kotlin, Jetpack Compose, Swift e SwiftUI nativos.',
-    level: 'Compilando Ideias', progress: 55, streak: 5,
+    level: 'Compilando Ideias', progress: 55,
     levels: ['Compilando Ideias', 'Primeiro Build', 'App Funcional', 'Na Loja', 'Sênior Mobile'],
     modules: [
-      { id: 'd1', name: 'Ciclo de Vida da Activity', status: 'completed', type: 'quiz', steps: [] },
+      { id: 'd1', name: 'Ciclo de Vida da Activity', type: 'quiz', steps: [] },
       {
-        id: 'd2', name: 'State Management Nativo', status: 'current', type: 'interativo',
+        id: 'd2', name: 'State Management Nativo', type: 'interativo',
         steps: [
           { type: 'concept', title: 'O que é State e por que importa?', visual: null,
             text: '<strong>State</strong> é qualquer dado que, ao mudar, faz a UI se redesenhar. No Jetpack Compose você declara com <strong>remember { mutableStateOf(...) }</strong>. No SwiftUI usa <strong>@State</strong>. O framework rastreia quem leu esse dado e redesenha só esses componentes.' },
@@ -108,17 +264,17 @@ const TRACKS = [
             explain: 'rememberSaveable salva no Bundle — sobrevive a rotação, troca de tema e outros eventos de configuração.' },
         ],
       },
-      { id: 'dchk', name: 'Checkpoint: Primeiro App na Loja', status: 'locked', type: 'checkpoint', steps: [] },
+      { id: 'dchk', name: 'Checkpoint: Primeiro App na Loja', type: 'checkpoint', steps: [] },
     ],
   },
   {
     id: 'geo', title: 'Geopolítica Moderna', emoji: '🌍',
     desc: 'Blocos econômicos, conflitos e disputas do século XXI.',
-    level: 'Observador Global', progress: 20, streak: 2,
+    level: 'Observador Global', progress: 20,
     levels: ['Observador Global', 'Analista', 'Estrategista', 'Especialista'],
     modules: [
       {
-        id: 'g1', name: 'A Crise dos Semicondutores', status: 'current', type: 'quiz',
+        id: 'g1', name: 'A Crise dos Semicondutores', type: 'quiz',
         steps: [
           { type: 'concept', title: 'Por que chips movem o mundo?', visual: null,
             text: 'Semicondutores estão em tudo: celulares, carros, mísseis, tomógrafos. <strong>Taiwan produz ~90% dos chips mais avançados</strong> do planeta pela TSMC. Isso faz de Taiwan o nó geopolítico mais sensível do século XXI.' },
@@ -135,11 +291,11 @@ const TRACKS = [
   {
     id: 'bb', title: 'Concurso: Banco do Brasil', emoji: '💰',
     desc: 'Foco no edital: SFN, Mercado Financeiro e Vendas.',
-    level: 'Futuro Escriturário', progress: 15, streak: 1,
+    level: 'Futuro Escriturário', progress: 15,
     levels: ['Futuro Escriturário', 'Candidato Preparado', 'Finalista', 'Aprovado BB'],
     modules: [
       {
-        id: 'b1', name: 'Sistema Financeiro Nacional', status: 'current', type: 'quiz',
+        id: 'b1', name: 'Sistema Financeiro Nacional', type: 'quiz',
         steps: [
           { type: 'concept', title: 'Como o SFN é organizado?', visual: null,
             text: 'O SFN tem <strong>3 níveis</strong>: (1) <strong>Normativos</strong> — CMN, CNSP, CNPC — fazem as regras. (2) <strong>Supervisores</strong> — Banco Central, CVM, Susep — fiscalizam. (3) <strong>Operadores</strong> — bancos, corretoras, seguradoras — atuam no mercado.' },
@@ -155,7 +311,7 @@ const TRACKS = [
             correct: 2, explain: 'O BB opera no nível dos "operadores" como banco múltiplo — mesmo sendo de capital misto com participação do governo federal.' },
         ],
       },
-      { id: 'b2', name: 'Garantias do SFN', status: 'locked', type: 'quiz', steps: [] },
+      { id: 'b2', name: 'Garantias do SFN', type: 'quiz', steps: [] },
     ],
   },
 ];
@@ -218,6 +374,155 @@ function TonesSim() {
           <div style={{ fontSize: '.65rem', color: C.hint, marginTop: 2 }}>{t.en}</div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// ─── FUSÃO ESTELAR — SIMULATION ───────────────────────────────────────────────
+function FusionSim() {
+  const pRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
+  const flashRef = useRef(null);
+  const rafRef = useRef(null);
+  useEffect(() => {
+    let t = 0;
+    const CYCLE = 160;
+    const positions = [{ x: 20, y: 20 }, { x: 118, y: 20 }, { x: 20, y: 118 }, { x: 118, y: 118 }];
+    const frame = () => {
+      t = (t + 1) % CYCLE;
+      const progress = t / CYCLE;
+      const conv = Math.min(progress / 0.7, 1);
+      pRefs.forEach((ref, i) => {
+        if (!ref.current) return;
+        const start = positions[i];
+        const cx = 69, cy = 69;
+        const x = start.x + (cx - start.x) * conv;
+        const y = start.y + (cy - start.y) * conv;
+        ref.current.style.left = x + 'px';
+        ref.current.style.top = y + 'px';
+        ref.current.style.opacity = progress > 0.72 ? Math.max(0, 1 - (progress - 0.72) / 0.1) : 1;
+      });
+      if (flashRef.current) {
+        const flashPhase = progress > 0.7 && progress < 0.95 ? (progress - 0.7) / 0.25 : 0;
+        flashRef.current.style.opacity = flashPhase > 0 ? String(Math.sin(flashPhase * Math.PI)) : '0';
+        flashRef.current.style.transform = `translate(-50%,-50%) scale(${0.5 + flashPhase * 2})`;
+      }
+      rafRef.current = requestAnimationFrame(frame);
+    };
+    rafRef.current = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ position: 'relative', width: 150, height: 150, margin: '0 auto' }}>
+        <div ref={flashRef} style={{ position: 'absolute', top: '50%', left: '50%', width: 44, height: 44, borderRadius: '50%', background: 'radial-gradient(circle, #FBBF24, transparent 70%)', opacity: 0 }} />
+        {pRefs.map((ref, i) => (
+          <div key={i} ref={ref} style={{ position: 'absolute', width: 12, height: 12, borderRadius: '50%', background: '#F87171', boxShadow: '0 0 8px #F87171' }} />
+        ))}
+      </div>
+      <div style={{ fontSize: '.7rem', color: C.hint, marginTop: 8 }}>4 prótons se fundem → 1 núcleo de hélio + energia</div>
+    </div>
+  );
+}
+
+// ─── BURACO NEGRO — SIMULATION ────────────────────────────────────────────────
+function BlackHoleSim() {
+  const diskRef = useRef(null);
+  const rafRef = useRef(null);
+  useEffect(() => {
+    let a = 0;
+    const frame = () => {
+      a += 0.6;
+      if (diskRef.current) diskRef.current.style.transform = `translate(-50%,-50%) rotate(${a}deg)`;
+      rafRef.current = requestAnimationFrame(frame);
+    };
+    rafRef.current = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ position: 'relative', width: 160, height: 160, margin: '0 auto' }}>
+        <div ref={diskRef} style={{ position: 'absolute', top: '50%', left: '50%', width: 150, height: 58, borderRadius: '50%', border: '4px solid transparent', borderTopColor: '#FBBF24', borderRightColor: '#F87171', borderBottomColor: 'rgba(255,255,255,0.05)', borderLeftColor: '#60A5FA' }} />
+        <div style={{ position: 'absolute', top: '50%', left: '50%', width: 46, height: 46, borderRadius: '50%', background: '#000', transform: 'translate(-50%,-50%)', boxShadow: '0 0 22px 6px rgba(0,0,0,0.9)' }} />
+      </div>
+      <div style={{ fontSize: '.7rem', color: C.hint, marginTop: 8 }}>Disco de acreção girando ao redor do horizonte de eventos</div>
+    </div>
+  );
+}
+
+// ─── VIDA ESTELAR — SIMULATION ─────────────────────────────────────────────────
+function StarLifeSim() {
+  const dotRef = useRef(null);
+  const labelRef = useRef(null);
+  const rafRef = useRef(null);
+  const stages = useRef([
+    { x: 12, y: 108, label: 'Protoestrela', color: '#F87171', size: 10 },
+    { x: 55, y: 55, label: 'Sequência Principal', color: '#FBBF24', size: 14 },
+    { x: 102, y: 22, label: 'Gigante Vermelha', color: '#F87171', size: 28 },
+    { x: 142, y: 90, label: 'Anã Branca', color: '#60A5FA', size: 8 },
+  ]).current;
+  useEffect(() => {
+    let t = 0;
+    const frame = () => {
+      t += 0.006;
+      const idx = Math.floor(t) % stages.length;
+      const nextIdx = (idx + 1) % stages.length;
+      const localT = t % 1;
+      const a = stages[idx], b = stages[nextIdx];
+      const x = a.x + (b.x - a.x) * localT;
+      const y = a.y + (b.y - a.y) * localT;
+      const size = a.size + (b.size - a.size) * localT;
+      if (dotRef.current) {
+        dotRef.current.style.left = x + 'px';
+        dotRef.current.style.top = y + 'px';
+        dotRef.current.style.width = size + 'px';
+        dotRef.current.style.height = size + 'px';
+        dotRef.current.style.background = localT < 0.5 ? a.color : b.color;
+        dotRef.current.style.boxShadow = `0 0 ${size}px ${localT < 0.5 ? a.color : b.color}`;
+      }
+      if (labelRef.current) labelRef.current.textContent = localT < 0.5 ? a.label : b.label;
+      rafRef.current = requestAnimationFrame(frame);
+    };
+    rafRef.current = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [stages]);
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ position: 'relative', width: 160, height: 130, margin: '0 auto', borderLeft: `2px solid ${C.hint}`, borderBottom: `2px solid ${C.hint}` }}>
+        <div ref={dotRef} style={{ position: 'absolute', borderRadius: '50%' }} />
+      </div>
+      <div ref={labelRef} style={{ fontSize: '.72rem', color: C.amber, fontWeight: 700, marginTop: 8 }}>Protoestrela</div>
+      <div style={{ fontSize: '.65rem', color: C.hint, marginTop: 2 }}>Ciclo de vida estelar (simplificado)</div>
+    </div>
+  );
+}
+
+// ─── ONDAS GRAVITACIONAIS — SIMULATION ────────────────────────────────────────
+function GravWaveSim() {
+  const p1Ref = useRef(null);
+  const p2Ref = useRef(null);
+  const rafRef = useRef(null);
+  useEffect(() => {
+    let a = 0;
+    const frame = () => {
+      a += 0.05;
+      if (p1Ref.current) { p1Ref.current.style.top = (75 - Math.sin(a) * 22) + 'px'; p1Ref.current.style.left = (75 - Math.cos(a) * 22) + 'px'; }
+      if (p2Ref.current) { p2Ref.current.style.top = (75 + Math.sin(a) * 22) + 'px'; p2Ref.current.style.left = (75 + Math.cos(a) * 22) + 'px'; }
+      rafRef.current = requestAnimationFrame(frame);
+    };
+    rafRef.current = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <style>{`@keyframes gwRipple { 0% { transform: translate(-50%,-50%) scale(0.3); opacity: .55; } 100% { transform: translate(-50%,-50%) scale(2.6); opacity: 0; } }`}</style>
+      <div style={{ position: 'relative', width: 150, height: 150, margin: '0 auto', overflow: 'hidden' }}>
+        {[0, 0.66, 1.32].map(delay => (
+          <div key={delay} style={{ position: 'absolute', top: '50%', left: '50%', width: 60, height: 60, borderRadius: '50%', border: '1.5px solid rgba(96,165,250,0.5)', animation: 'gwRipple 2s linear infinite', animationDelay: `${delay}s` }} />
+        ))}
+        <div ref={p1Ref} style={{ position: 'absolute', width: 10, height: 10, borderRadius: '50%', background: '#A78BFA' }} />
+        <div ref={p2Ref} style={{ position: 'absolute', width: 10, height: 10, borderRadius: '50%', background: '#60A5FA' }} />
+      </div>
+      <div style={{ fontSize: '.7rem', color: C.hint, marginTop: 8 }}>Binária compacta emitindo ondas gravitacionais</div>
     </div>
   );
 }
@@ -304,7 +609,7 @@ function LessonScreen({ track, module: mod, onBack, onComplete }) {
   };
 
   const handleNext = () => {
-    if (step + 1 >= mod.steps.length) { setDone(true); onComplete(xpGained, track.id); return; }
+    if (step + 1 >= mod.steps.length) { setDone(true); onComplete(xpGained, track.id, mod.id); return; }
     setStep(s => s + 1);
   };
 
@@ -354,6 +659,10 @@ function LessonScreen({ track, module: mod, onBack, onComplete }) {
                 <div style={{ fontSize: '.62rem', fontWeight: 700, letterSpacing: .8, color: C.hint, textTransform: 'uppercase', marginBottom: 10 }}>Visual interativo</div>
                 {current.visual === 'orbit' && <OrbitSim />}
                 {current.visual === 'tones' && <TonesSim />}
+                {current.visual === 'fusion' && <FusionSim />}
+                {current.visual === 'blackhole' && <BlackHoleSim />}
+                {current.visual === 'starlife' && <StarLifeSim />}
+                {current.visual === 'gravwave' && <GravWaveSim />}
               </div>
             )}
           </>
@@ -419,10 +728,11 @@ function LessonScreen({ track, module: mod, onBack, onComplete }) {
 }
 
 // ─── MODULE TREE ─────────────────────────────────────────────────────────────
-function ModuleScreen({ track, onBack, onStartLesson }) {
+function ModuleScreen({ track, completedModules, onBack, onStartLesson }) {
   const col = TRACK_COLORS[track.id] || C.green;
   const offsets = ['translateX(-42px)', 'translateX(42px)', 'translateX(0)', 'translateX(-42px)', 'translateX(42px)'];
   const typeLabel = { quiz: 'Quiz', interativo: 'Interativo', 'áudio-quiz': 'Áudio', checkpoint: 'Checkpoint' };
+  const modules = useMemo(() => computeModuleStatus(track.modules, completedModules), [track.modules, completedModules]);
 
   return (
     <div style={S.wrap}>
@@ -444,26 +754,28 @@ function ModuleScreen({ track, onBack, onStartLesson }) {
       <div style={{ fontSize: '.72rem', color: C.muted, marginBottom: 24 }}>🏆 {track.level}</div>
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        {track.modules.map((m, i) => {
+        {modules.map((m, i) => {
           const isCheckpoint = m.type === 'checkpoint';
-          let icon = isCheckpoint ? '🏆' : m.status === 'completed' ? '✓' : m.status === 'locked' ? '🔒' : `${i + 1}`;
+          const isComingSoon = m.status === 'coming_soon';
+          let icon = isCheckpoint ? '🏆' : m.status === 'completed' ? '✓' : m.status === 'locked' ? '🔒' : isComingSoon ? '🔜' : `${i + 1}`;
           let bg = m.status === 'current' ? col : m.status === 'completed' ? `${col}33` : C.surface2;
           let textCol = m.status === 'current' ? '#0d1a0d' : m.status === 'completed' ? col : C.hint;
           let boxShadow = m.status === 'current' ? `0 0 0 5px ${col}22` : 'none';
-          let border = m.status === 'locked' ? `2px solid ${C.border}` : 'none';
+          let border = (m.status === 'locked' || isComingSoon) ? `2px ${isComingSoon ? 'dashed' : 'solid'} ${C.border}` : 'none';
           const size = isCheckpoint ? 76 : 68;
           const radius = isCheckpoint ? 22 : '50%';
+          const disabled = m.status === 'locked' || isComingSoon;
 
           return (
             <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               {i > 0 && <div style={{ width: 2.5, height: 28, background: C.surface2, borderRadius: 2 }} />}
               <div style={{ transform: offsets[i % 2 === 0 ? 0 : 1], display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                <button disabled={m.status === 'locked'} onClick={() => m.status !== 'locked' && onStartLesson(track.id, m.id)}
-                  style={{ width: size, height: size, borderRadius: radius, border, background: bg, color: textCol, fontSize: isCheckpoint ? '1.5rem' : '1.3rem', fontWeight: 800, cursor: m.status === 'locked' ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow, transition: 'transform .15s' }}>
+                <button disabled={disabled} onClick={() => !disabled && onStartLesson(track.id, m.id)}
+                  style={{ width: size, height: size, borderRadius: radius, border, background: bg, color: textCol, fontSize: isCheckpoint ? '1.5rem' : '1.3rem', fontWeight: 800, cursor: disabled ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow, transition: 'transform .15s', opacity: isComingSoon ? .6 : 1 }}>
                   {icon}
                 </button>
                 <div style={{ fontSize: '.72rem', fontWeight: 600, color: C.text, textAlign: 'center', maxWidth: 140, lineHeight: 1.3 }}>{m.name}</div>
-                <div style={{ fontSize: '.62rem', color: C.hint, textAlign: 'center' }}>{typeLabel[m.type] || ''}</div>
+                <div style={{ fontSize: '.62rem', color: C.hint, textAlign: 'center' }}>{isComingSoon ? 'Em breve' : (typeLabel[m.type] || '')}</div>
               </div>
             </div>
           );
@@ -480,28 +792,59 @@ export default function IntelMe({ onBack }) {
   const [activeModule, setActiveModule] = useState(null);
   const [tab, setTab] = useState('trilhas');
   const [quote] = useState(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
-  const [streaks, setStreaks] = useState({ general: 5, tracks: { astrofisica: 3, mandarin: 0, dev: 5, geo: 2, bb: 1 } });
-  const [xp, setXp] = useState(340);
+  const [progress, setProgress] = useState(loadProgress);
+
+  useEffect(() => { saveProgress(progress); }, [progress]);
+
+  const today = todayKey();
+  const todayCount = progress.dailyCounts[today] || 0;
+
+  const generalStreak = useMemo(() => {
+    const met = new Set(Object.keys(progress.dailyCounts).filter(d => progress.dailyCounts[d] >= MIN_LESSONS_PER_DAY));
+    return computeStreak(met);
+  }, [progress.dailyCounts]);
+
+  const trackStreaks = useMemo(() => {
+    const out = {};
+    TRACKS.forEach(t => {
+      const dates = progress.trackDates[t.id] || {};
+      out[t.id] = computeStreak(new Set(Object.keys(dates)));
+    });
+    return out;
+  }, [progress.trackDates]);
 
   const handleStartLesson = (trackId, moduleId) => {
     const track = TRACKS.find(t => t.id === trackId);
-    const mod = track.modules.find(m => m.id === moduleId);
-    if (!mod.steps || !mod.steps.length) { alert('Em breve!'); return; }
+    const modules = computeModuleStatus(track.modules, progress.completedModules);
+    const mod = modules.find(m => m.id === moduleId);
+    if (!mod.steps || !mod.steps.length) { alert('Em breve! Essa fase ainda está sendo preparada.'); return; }
     setActiveTrack(track);
     setActiveModule(mod);
     setView('lesson');
   };
 
-  const handleLessonComplete = (gained, trackId) => {
-    setXp(x => x + gained);
-    setStreaks(s => ({ general: Math.max(s.general, (s.tracks[trackId] || 0) + 1), tracks: { ...s.tracks, [trackId]: (s.tracks[trackId] || 0) + 1 } }));
+  const handleLessonComplete = (gained, trackId, moduleId) => {
+    setProgress(p => {
+      const t = todayKey();
+      const dailyCounts = { ...p.dailyCounts, [t]: (p.dailyCounts[t] || 0) + 1 };
+      const trackDates = { ...p.trackDates, [trackId]: { ...(p.trackDates[trackId] || {}), [t]: true } };
+      const completedModules = (moduleId && moduleId !== 'recap' && !p.completedModules.includes(moduleId))
+        ? [...p.completedModules, moduleId]
+        : p.completedModules;
+      return { ...p, dailyCounts, trackDates, completedModules, xp: p.xp + gained };
+    });
   };
 
   const handleRecap = () => {
     const pool = [];
-    TRACKS.forEach(t => t.modules.forEach(m => {
-      if (m.steps && m.status !== 'locked') m.steps.filter(s => s.type === 'mc').forEach(s => pool.push({ ...s, _t: t }));
-    }));
+    TRACKS.forEach(t => {
+      const modules = computeModuleStatus(t.modules, progress.completedModules);
+      modules.forEach(m => {
+        if (m.steps && m.steps.length && (m.status === 'completed' || m.status === 'current')) {
+          m.steps.filter(s => s.type === 'mc').forEach(s => pool.push({ ...s, _t: t }));
+        }
+      });
+    });
     if (!pool.length) { alert('Complete algumas lições primeiro!'); return; }
     const picked = pool.sort(() => Math.random() - .5).slice(0, 4);
     setActiveTrack(picked[0]._t);
@@ -514,7 +857,7 @@ export default function IntelMe({ onBack }) {
   }
 
   if (view === 'module' && activeTrack) {
-    return <ModuleScreen track={activeTrack} onBack={() => setView('home')} onStartLesson={handleStartLesson} />;
+    return <ModuleScreen track={activeTrack} completedModules={progress.completedModules} onBack={() => setView('home')} onStartLesson={handleStartLesson} />;
   }
 
   // ── HOME ──
@@ -529,7 +872,7 @@ export default function IntelMe({ onBack }) {
         {onBack && (
           <button onClick={onBack} style={{ fontSize: '.75rem', color: C.muted, background: 'none', border: `1px solid ${C.border}`, borderRadius: 20, padding: '4px 12px', cursor: 'pointer' }}>← Hub</button>
         )}
-        <div style={S.pill(C.amberDim, C.amber, 'rgba(251,191,36,.25)')}>⚡ {xp} XP</div>
+        <div style={S.pill(C.amberDim, C.amber, 'rgba(251,191,36,.25)')}>⚡ {progress.xp} XP</div>
       </div>
 
       {/* Streak bar */}
@@ -540,12 +883,14 @@ export default function IntelMe({ onBack }) {
         </div>
         <div style={{ display: 'flex', gap: 18 }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: C.amber }}>{streaks.general}</div>
+            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: C.amber }}>{generalStreak}</div>
             <div style={{ fontSize: '.65rem', color: C.muted, textTransform: 'uppercase', letterSpacing: .5 }}>Geral</div>
           </div>
           <div style={{ width: 1, height: 32, background: C.border }} />
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '1.1rem', fontWeight: 800, color: C.green }}>✓</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 800, color: todayCount >= MIN_LESSONS_PER_DAY ? C.green : C.amber }}>
+              {todayCount >= MIN_LESSONS_PER_DAY ? '✓' : `${todayCount}/${MIN_LESSONS_PER_DAY}`}
+            </div>
             <div style={{ fontSize: '.65rem', color: C.muted, textTransform: 'uppercase', letterSpacing: .5 }}>Hoje</div>
           </div>
         </div>
@@ -577,7 +922,7 @@ export default function IntelMe({ onBack }) {
                       <div style={{ fontSize: '.7rem', color: C.muted, marginTop: 1, display: 'flex', alignItems: 'center', gap: 4 }}>🏆 {t.level}</div>
                     </div>
                   </div>
-                  <div style={S.pill(C.amberDim, C.amber, 'rgba(251,191,36,.2)')}>🔥 {streaks.tracks[t.id]}d</div>
+                  <div style={S.pill(C.amberDim, C.amber, 'rgba(251,191,36,.2)')}>🔥 {trackStreaks[t.id]}d</div>
                 </div>
                 <div style={{ fontSize: '.75rem', color: C.muted, lineHeight: 1.5, marginBottom: 12 }}>{t.desc}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
