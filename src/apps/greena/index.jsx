@@ -1,10 +1,13 @@
-import { useState } from 'react';
-import { ArrowLeft, LayoutDashboard, ArrowLeftRight, Target, ShieldAlert, Wallet2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, LayoutDashboard, ArrowLeftRight, Target, ShieldAlert, Wallet2, Trophy } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Transacoes from './components/Transacoes';
 import Metas from './components/Metas';
 import Dividas from './components/Dividas';
 import Contas from './components/Contas';
+import Missoes from './components/Missoes';
+import { useStreak, usePerfil } from './hooks/useGreenaData';
+import { infoDeNivel, avatarDoNivel } from './lib/missionEngine';
 import { greena } from './lib/theme';
 
 const ABAS = [
@@ -12,12 +15,24 @@ const ABAS = [
   { id: 'transacoes', label: 'Lançamentos', icone: ArrowLeftRight, Componente: Transacoes },
   { id: 'metas', label: 'Metas', icone: Target, Componente: Metas },
   { id: 'dividas', label: 'Dívidas', icone: ShieldAlert, Componente: Dividas },
+  { id: 'missoes', label: 'Missões', icone: Trophy, Componente: Missoes },
   { id: 'contas', label: 'Contas', icone: Wallet2, Componente: Contas },
 ];
 
 export default function Greena({ onBack }) {
   const [abaAtiva, setAbaAtiva] = useState('dashboard');
   const AbaAtual = ABAS.find((a) => a.id === abaAtiva)?.Componente || Dashboard;
+  const { perfil } = usePerfil();
+  const { registrarHoje } = useStreak('abertura_diaria');
+
+  // Registra a abertura do dia uma vez, não importa em qual aba o usuário caia
+  useEffect(() => {
+    registrarHoje();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const nivelInfo = perfil ? infoDeNivel(perfil.xp_total) : null;
+  const avatar = nivelInfo ? avatarDoNivel(nivelInfo.nivel) : null;
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-main)', paddingBottom: '90px' }}>
@@ -34,12 +49,24 @@ export default function Greena({ onBack }) {
           >
             <ArrowLeft size={17} style={{ color: 'var(--applime-dark-purple)' }} />
           </div>
-          <div>
+          <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--applime-dark-purple)', letterSpacing: '-0.5px', lineHeight: 1.1 }}>
               💰 Greena
             </h1>
             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>Sua relação honesta com o dinheiro</span>
           </div>
+          {avatar && (
+            <div
+              onClick={() => setAbaAtiva('missoes')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: greena.jadeSoft,
+                padding: '5px 10px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
+              }}
+            >
+              <span style={{ fontSize: '1.05rem' }}>{avatar.emoji}</span>
+              <span style={{ fontSize: '0.74rem', fontWeight: 800, color: greena.jadeDeep }}>Nv.{nivelInfo.nivel}</span>
+            </div>
+          )}
         </header>
 
         {/* Conteúdo da aba */}
