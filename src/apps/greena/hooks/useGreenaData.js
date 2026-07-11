@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../../../supabaseClient';
+import { supabase } from '../../../lib/supabaseClient';
 
 const CATEGORIAS_PADRAO = [
   { nome: 'Alimentação', tipo: 'despesa', cor: '#C0533E', icone: '🍽️' },
