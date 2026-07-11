@@ -49,38 +49,32 @@ function ComparativoScore({ perfil, onUpdate }) {
         {/* Serasa */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <img src="/logo-serasa.png" alt="Serasa" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
-          <div style={{ flex: 1 }}>
-            <label style={labelStyle}>Serasa</label>
-            <input
-              type="number"
-              value={serasa}
-              onChange={(e) => setSerasa(e.target.value)}
-              placeholder="Ex: 750"
-              style={inputStyle}
-            />
-          </div>
+          <input
+            type="number"
+            value={serasa}
+            onChange={(e) => setSerasa(e.target.value)}
+            placeholder="Score Serasa"
+            style={inputStyle}
+          />
         </div>
 
         {/* Nubank */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <img src="/logo-nubank.png" alt="Nubank" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
-          <div style={{ flex: 1 }}>
-            <label style={labelStyle}>Nubank</label>
-            <input
-              type="number"
-              value={nubank}
-              onChange={(e) => setNubank(e.target.value)}
-              placeholder="Ex: 850"
-              style={inputStyle}
-            />
-          </div>
+          <input
+            type="number"
+            value={nubank}
+            onChange={(e) => setNubank(e.target.value)}
+            placeholder="Score Nubank"
+            style={inputStyle}
+          />
         </div>
 
         <button
           onClick={handleSalvar}
           disabled={salvando}
           style={{
-            ...pillButtonStyle(true, '#00c853'),
+            ...pillButtonStyle(true, '#8052fe'),
             alignSelf: 'flex-start',
             padding: '10px 24px',
             marginTop: '4px',

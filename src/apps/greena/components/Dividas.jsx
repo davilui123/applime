@@ -39,17 +39,17 @@ function ModalNovaDivida({ onClose, onSalvar }) {
   }
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,51,102,0.15)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ backgroundColor: 'var(--bg-surface)', width: '100%', maxWidth: '450px', borderRadius: '24px 24px 0 0', padding: '20px', maxHeight: '88vh', overflowY: 'auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--applime-dark-purple)' }}>Nova dívida</h3>
-          <X size={20} onClick={onClose} style={{ cursor: 'pointer', color: 'var(--text-muted)' }} />
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(37,20,88,0.35)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ backgroundColor: '#FFFFFF', width: '100%', maxWidth: '450px', borderRadius: '28px 28px 0 0', padding: '24px 20px 32px', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 -8px 30px rgba(0,0,0,0.12)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#241458' }}>Nova dívida</h3>
+          <X size={22} onClick={onClose} style={{ cursor: 'pointer', color: '#999' }} />
         </div>
 
         <label style={labelStyle}>Tipo</label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
           {TIPOS_DIVIDA.map((t) => (
-            <button key={t.valor} onClick={() => setTipo(t.valor)} style={pillButtonStyle(tipo === t.valor, greena.terracotta)}>
+            <button key={t.valor} onClick={() => setTipo(t.valor)} style={pillButtonStyle(tipo === t.valor, '#ff797f')}>
               {t.icone} {t.label}
             </button>
           ))}
@@ -60,7 +60,7 @@ function ModalNovaDivida({ onClose, onSalvar }) {
 
         <div style={{ display: 'flex', gap: '10px' }}>
           <div style={{ flex: 1 }}>
-            <label style={labelStyle}>Valor total da dívida</label>
+            <label style={labelStyle}>Valor total</label>
             <input type="number" inputMode="decimal" value={valorTotal} onChange={(e) => setValorTotal(e.target.value)} style={inputStyle} />
           </div>
           <div style={{ flex: 1 }}>
@@ -71,7 +71,7 @@ function ModalNovaDivida({ onClose, onSalvar }) {
 
         <div style={{ display: 'flex', gap: '10px' }}>
           <div style={{ flex: 1 }}>
-            <label style={labelStyle}>Juros ao mês (%)</label>
+            <label style={labelStyle}>Juros/mês (%)</label>
             <input type="number" inputMode="decimal" value={taxaJuros} onChange={(e) => setTaxaJuros(e.target.value)} placeholder="Ex: 12.5" style={inputStyle} />
           </div>
           <div style={{ flex: 1 }}>
@@ -86,7 +86,20 @@ function ModalNovaDivida({ onClose, onSalvar }) {
         <button
           disabled={salvando}
           onClick={handleSalvar}
-          style={{ width: '100%', marginTop: '6px', padding: '13px', borderRadius: '14px', border: 'none', backgroundColor: greena.terracotta, color: '#fff', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', opacity: salvando ? 0.6 : 1 }}
+          style={{
+            width: '100%',
+            marginTop: '16px',
+            padding: '14px',
+            borderRadius: '16px',
+            border: 'none',
+            backgroundColor: '#ff797f',
+            color: '#fff',
+            fontWeight: 700,
+            fontSize: '0.95rem',
+            cursor: 'pointer',
+            opacity: salvando ? 0.6 : 1,
+            boxShadow: '0 4px 12px rgba(255,121,127,0.3)',
+          }}
         >
           {salvando ? 'Salvando…' : 'Cadastrar dívida'}
         </button>
@@ -95,8 +108,28 @@ function ModalNovaDivida({ onClose, onSalvar }) {
   );
 }
 
-const labelStyle = { fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', marginBottom: '6px' };
-const inputStyle = { width: '100%', padding: '11px 12px', borderRadius: '12px', border: '1px solid var(--border-light)', fontSize: '0.88rem', marginBottom: '14px', boxSizing: 'border-box', backgroundColor: 'var(--bg-main)', color: 'var(--applime-dark-purple)' };
+const labelStyle = {
+  fontSize: '0.7rem',
+  fontWeight: 700,
+  color: '#6b7280',
+  textTransform: 'uppercase',
+  letterSpacing: '0.5px',
+  display: 'block',
+  marginBottom: '5px',
+};
+
+const inputStyle = {
+  width: '100%',
+  padding: '12px 14px',
+  borderRadius: '12px',
+  border: '1px solid #e5e7eb',
+  fontSize: '0.9rem',
+  marginBottom: '16px',
+  boxSizing: 'border-box',
+  backgroundColor: '#f9fafb',
+  color: '#241458',
+  outline: 'none',
+};
 
 export default function Dividas() {
   const { dados: dividas, loading, inserir, atualizar, remover } = useDividas();
@@ -121,52 +154,81 @@ export default function Dividas() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-        <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--applime-dark-purple)' }}>Estratégia Inteligente</h3>
+        <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#241458' }}>Estratégia Inteligente</h3>
         <button
           onClick={() => setModalAberto(true)}
-          style={{ width: '38px', height: '38px', borderRadius: '12px', border: 'none', backgroundColor: greena.terracotta, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+          style={{
+            width: '38px',
+            height: '38px',
+            borderRadius: '14px',
+            border: 'none',
+            backgroundColor: '#ff797f',
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            flexShrink: 0,
+            boxShadow: '0 4px 12px rgba(255,121,127,0.3)',
+          }}
         >
           <Plus size={20} />
         </button>
       </div>
 
-      <div style={{ ...cardStyle, padding: '18px', background: `linear-gradient(135deg, ${greena.terracottaSoft} 0%, #FFFFFF 100%)`, marginBottom: '16px' }}>
+      <div style={{
+        ...cardStyle,
+        padding: '18px',
+        background: 'linear-gradient(135deg, #ffebee 0%, #ffffff 100%)',
+        borderLeft: `6px solid #ff797f`,
+        marginBottom: '16px',
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-          <Flag size={16} color={greena.terracotta} />
-          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: greena.terracotta, textTransform: 'uppercase' }}>Total em dívidas ativas</span>
+          <Flag size={16} color="#ff797f" />
+          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#ff797f', textTransform: 'uppercase' }}>
+            Total em dívidas ativas
+          </span>
         </div>
-        <div style={{ fontSize: '1.7rem', fontWeight: 900, color: greena.terracotta, letterSpacing: '-0.5px' }}>{formatBRL(totalDevido)}</div>
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>Meta: zerar isso até 31/12/2026</div>
+        <div style={{ fontSize: '1.7rem', fontWeight: 900, color: '#241458', letterSpacing: '-0.5px' }}>
+          {formatBRL(totalDevido)}
+        </div>
+        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '2px' }}>
+          Meta: zerar isso até 31/12/2026
+        </div>
       </div>
 
-      {loading && <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Carregando dívidas…</p>}
+      {loading && <p style={{ color: '#6b7280', fontSize: '0.85rem' }}>Carregando dívidas…</p>}
 
       {!loading && dividasAtivas.length === 0 && dividas.length === 0 && (
         <div style={{ ...cardStyle, padding: '30px 16px', textAlign: 'center', marginBottom: '16px' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Nenhuma dívida cadastrada. Se você já está livre delas, ótimo — se não, cadastre pra montar sua estratégia.</p>
+          <p style={{ color: '#6b7280', fontSize: '0.85rem' }}>Nenhuma dívida cadastrada. Se você já está livre delas, ótimo — se não, cadastre pra montar sua estratégia.</p>
         </div>
       )}
 
       {dividasAtivas.length > 0 && (
         <>
-          <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
-            <button onClick={() => setMetodo('avalanche')} style={pillButtonStyle(metodo === 'avalanche', greena.terracotta)}>Avalanche (menos juros)</button>
-            <button onClick={() => setMetodo('snowball')} style={pillButtonStyle(metodo === 'snowball', greena.gold)}>Bola de neve (motivação)</button>
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
+            <button onClick={() => setMetodo('avalanche')} style={pillButtonStyle(metodo === 'avalanche', '#ff797f', true, 'Avalanche')}>
+              Avalanche
+            </button>
+            <button onClick={() => setMetodo('snowball')} style={pillButtonStyle(metodo === 'snowball', '#fdfc30', true, 'Snowball')}>
+              Snowball
+            </button>
           </div>
 
           <div style={{ ...cardStyle, padding: '16px', marginBottom: '16px' }}>
-            <label style={labelStyle}>Quanto você consegue destinar por mês pra quitar dívidas?</label>
+            <label style={labelStyle}>Quanto você consegue destinar por mês?</label>
             <input type="number" inputMode="decimal" value={valorMensal} onChange={(e) => setValorMensal(e.target.value)} placeholder="Ex: 600" style={{ ...inputStyle, marginBottom: 0 }} />
             {simulacao && (
-              <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)' }}>
-                <div style={{ fontSize: '0.85rem', color: 'var(--applime-dark-purple)' }}>
+              <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e5e7eb' }}>
+                <div style={{ fontSize: '0.85rem', color: '#241458' }}>
                   Nesse ritmo, você fica <strong>livre de dívidas em {simulacao.meses} {simulacao.meses === 1 ? 'mês' : 'meses'}</strong>
                   {simulacao.dataQuitacaoTotal && (
                     <> — por volta de <strong>{simulacao.dataQuitacaoTotal.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</strong></>
                   )}
                   .
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px' }}>
                   Total de juros pago no caminho: {formatBRL(simulacao.totalJurosPago)}
                 </div>
               </div>
@@ -179,27 +241,29 @@ export default function Dividas() {
               const progresso = Math.min((Number(d.valor_pago) / Math.max(Number(d.valor_total), 1)) * 100, 100);
               const tipoInfo = TIPOS_DIVIDA.find((t) => t.valor === d.tipo) || TIPOS_DIVIDA[4];
               return (
-                <div key={d.id} style={{ ...cardStyle, padding: '16px' }}>
+                <div key={d.id} style={{ ...cardStyle, padding: '16px', borderLeft: `6px solid #ff797f` }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '30px', height: '30px', borderRadius: '10px', backgroundColor: `${greena.terracotta}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 800, color: greena.terracotta }}>
+                      <div style={{ width: '30px', height: '30px', borderRadius: '10px', backgroundColor: '#ff797f18', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 800, color: '#ff797f' }}>
                         #{d.prioridade}
                       </div>
                       <div>
-                        <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--applime-dark-purple)' }}>{tipoInfo.icone} {d.nome}</div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{d.taxa_juros_mensal}% a.m. · parcela {formatBRL(d.valor_parcela || 0)}</div>
+                        <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#241458' }}>{tipoInfo.icone} {d.nome}</div>
+                        <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>{d.taxa_juros_mensal}% a.m. · parcela {formatBRL(d.valor_parcela || 0)}</div>
                       </div>
                     </div>
-                    <Trash2 size={15} onClick={() => remover(d.id)} style={{ color: 'var(--text-muted)', cursor: 'pointer', flexShrink: 0 }} />
+                    <Trash2 size={15} onClick={() => remover(d.id)} style={{ color: '#ccc', cursor: 'pointer', flexShrink: 0 }} />
                   </div>
 
-                  <div style={{ height: '10px', borderRadius: '6px', backgroundColor: 'var(--bg-main)', overflow: 'hidden', marginBottom: '6px' }}>
-                    <div style={{ height: '100%', width: `${progresso}%`, backgroundColor: greena.jade, borderRadius: '6px' }} />
+                  <div style={{ height: '10px', borderRadius: '6px', backgroundColor: '#f3f4f6', overflow: 'hidden', marginBottom: '6px' }}>
+                    <div style={{ height: '100%', width: `${progresso}%`, backgroundColor: '#00c853', borderRadius: '6px' }} />
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Faltam {formatBRL(restante)} de {formatBRL(d.valor_total)}</span>
-                    <button onClick={() => marcarComoQuitada(d)} style={{ ...pillButtonStyle(false, greena.jade), padding: '5px 12px' }}>Quitar</button>
+                    <span style={{ fontSize: '0.78rem', color: '#6b7280' }}>
+                      Faltam {formatBRL(restante)} de {formatBRL(d.valor_total)}
+                    </span>
+                    <button onClick={() => marcarComoQuitada(d)} style={{ ...pillButtonStyle(false, '#00c853'), padding: '5px 12px' }}>Quitar</button>
                   </div>
                 </div>
               );
