@@ -50,7 +50,7 @@ function RadarFinanceiro({ radar }) {
         return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="var(--border-light)" strokeWidth="1" />;
       })}
 
-      <polygon points={pontosValor} fill={`${greena.jade}33`} stroke={greena.jade} strokeWidth="2" />
+      <polygon points={pontosValor} fill={`${greena.verde}33`} stroke={greena.verde} strokeWidth="2" />
 
       {EIXOS.map((eixo, i) => {
         const valor = radar[eixo.chave] / 100;
@@ -116,32 +116,29 @@ export default function Dashboard() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Patrimônio em destaque */}
-      <div style={{ ...cardStyle, padding: '20px', background: `linear-gradient(135deg, ${greena.jadeSoft} 0%, #FFFFFF 100%)` }}>
-        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: greena.jadeDeep, textTransform: 'uppercase', letterSpacing: '0.4px' }}>Patrimônio líquido</span>
-        <div style={{ fontSize: '2rem', fontWeight: 900, color: greena.jadeDeep, letterSpacing: '-0.8px', marginTop: '4px' }}>
+      <div style={{ ...cardStyle, padding: '20px', background: `linear-gradient(135deg, ${greena.verdeSoft} 0%, #FFFFFF 100%)`, borderLeft: `4px solid ${greena.verde}` }}>
+        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: greena.verdeDeep, textTransform: 'uppercase', letterSpacing: '0.4px' }}>Patrimônio líquido</span>
+        <div style={{ fontSize: '2rem', fontWeight: 900, color: greena.verdeDeep, letterSpacing: '-0.8px', marginTop: '4px' }}>
           {formatBRL(patrimonio)}
         </div>
-        <div style={{ fontSize: '0.78rem', color: greena.jadeDeep, opacity: 0.75, marginTop: '2px' }}>
+        <div style={{ fontSize: '0.78rem', color: greena.verdeDeep, opacity: 0.75, marginTop: '2px' }}>
           Score de organização: <strong>{score}</strong> / 1000
         </div>
       </div>
 
-      {/* Stats rápidas */}
       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
         <StatCard icon={<Wallet size={16} color={greena.slateBlue} />} label="Saldo" valor={formatBRL(saldo)} cor={greena.slateBlue} />
-        <StatCard icon={<TrendingUp size={16} color={greena.jade} />} label="Receitas (mês)" valor={formatBRL(receitas)} cor={greena.jade} />
-        <StatCard icon={<TrendingDown size={16} color={greena.terracotta} />} label="Despesas (mês)" valor={formatBRL(despesas)} cor={greena.terracotta} />
+        <StatCard icon={<TrendingUp size={16} color={greena.verde} />} label="Receitas (mês)" valor={formatBRL(receitas)} cor={greena.verde} />
+        <StatCard icon={<TrendingDown size={16} color={greena.terracota} />} label="Despesas (mês)" valor={formatBRL(despesas)} cor={greena.terracota} />
         <StatCard
-          icon={<PiggyBank size={16} color={fluxo >= 0 ? greena.jade : greena.terracotta} />}
+          icon={<PiggyBank size={16} color={fluxo >= 0 ? greena.verde : greena.terracota} />}
           label="Fluxo do mês"
           valor={formatBRL(fluxo)}
-          cor={fluxo >= 0 ? greena.jade : greena.terracotta}
+          cor={fluxo >= 0 ? greena.verde : greena.terracota}
           sub={fluxo >= 0 ? 'Sobrando' : 'No vermelho'}
         />
       </div>
 
-      {/* Radar financeiro */}
       <div style={{ ...cardStyle, padding: '18px 8px' }}>
         <h3 style={{ padding: '0 12px', fontSize: '0.95rem', fontWeight: 800, color: 'var(--applime-dark-purple)', marginBottom: '4px' }}>Radar Financeiro</h3>
         <RadarFinanceiro radar={radar} />
@@ -164,7 +161,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Top categorias do mês */}
       <div style={{ ...cardStyle, padding: '16px' }}>
         <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--applime-dark-purple)', marginBottom: '12px' }}>Onde seu dinheiro foi este mês</h3>
         {topCategorias.length === 0 && (

@@ -29,7 +29,7 @@ function ModalNovaConta({ onClose, onSalvar }) {
       instituicao: instituicao.trim() || null,
       saldo_inicial: Number(saldoInicial) || 0,
       icone: tipoInfo.icone,
-      cor: greena.jade,
+      cor: greena.verde,
       origem: 'manual',
     });
     setSalvando(false);
@@ -37,7 +37,7 @@ function ModalNovaConta({ onClose, onSalvar }) {
   }
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(18,63,48,0.25)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,51,102,0.25)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
       <div onClick={(e) => e.stopPropagation()} style={{ backgroundColor: 'var(--bg-surface)', width: '100%', maxWidth: '450px', borderRadius: '24px 24px 0 0', padding: '20px', maxHeight: '88vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--applime-dark-purple)' }}>Nova conta</h3>
@@ -47,7 +47,7 @@ function ModalNovaConta({ onClose, onSalvar }) {
         <label style={labelStyle}>Tipo</label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
           {TIPOS_CONTA.map((t) => (
-            <button key={t.valor} onClick={() => setTipo(t.valor)} style={pillButtonStyle(tipo === t.valor, greena.jade)}>
+            <button key={t.valor} onClick={() => setTipo(t.valor)} style={pillButtonStyle(tipo === t.valor, greena.verde)}>
               {t.icone} {t.label}
             </button>
           ))}
@@ -65,7 +65,7 @@ function ModalNovaConta({ onClose, onSalvar }) {
         <button
           disabled={salvando}
           onClick={handleSalvar}
-          style={{ width: '100%', marginTop: '6px', padding: '13px', borderRadius: '14px', border: 'none', backgroundColor: greena.jade, color: '#fff', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', opacity: salvando ? 0.6 : 1 }}
+          style={{ width: '100%', marginTop: '6px', padding: '13px', borderRadius: '14px', border: 'none', backgroundColor: greena.verde, color: '#fff', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', opacity: salvando ? 0.6 : 1 }}
         >
           {salvando ? 'Salvando…' : 'Adicionar conta'}
         </button>
@@ -88,16 +88,12 @@ export default function Contas() {
         <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--applime-dark-purple)' }}>Suas contas</h3>
         <button
           onClick={() => setModalAberto(true)}
-          style={{ width: '38px', height: '38px', borderRadius: '12px', border: 'none', backgroundColor: greena.jade, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+          style={{ width: '38px', height: '38px', borderRadius: '12px', border: 'none', backgroundColor: greena.verde, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
         >
           <Plus size={20} />
         </button>
       </div>
 
-      {/* Placeholder Open Finance — UI pronta, integração real fica pra Fase 2.
-          Biblioteca a usar: pluggy-connect-sdk (ou react-pluggy-connect) no client,
-          + pluggy-sdk num backend (Supabase Edge Function) pra gerar o connect_token,
-          porque isso exige CLIENT_ID/CLIENT_SECRET que não podem ficar no front. */}
       <div style={{ ...cardStyle, padding: '16px', marginBottom: '16px', border: `1px dashed ${greena.slateBlue}55` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
           <div style={{ width: '34px', height: '34px', borderRadius: '10px', backgroundColor: `${greena.slateBlue}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -125,7 +121,7 @@ export default function Contas() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {contas.map((c) => (
           <div key={c.id} style={{ ...cardStyle, padding: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '38px', height: '38px', borderRadius: '11px', backgroundColor: `${greena.jade}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>
+            <div style={{ width: '38px', height: '38px', borderRadius: '11px', backgroundColor: `${greena.verde}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>
               {c.icone}
             </div>
             <div style={{ flex: 1 }}>
