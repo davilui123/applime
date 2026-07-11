@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, LayoutDashboard, ArrowLeftRight, Target, ShieldAlert, Wallet2, Trophy, User } from 'lucide-react';
+
+// Importa a fonte Ranchers
+import '@fontsource/ranchers';
+
 import Dashboard from './components/Dashboard';
 import Transacoes from './components/Transacoes';
 import Metas from './components/Metas';
@@ -36,58 +40,127 @@ export default function Greena({ onBack }) {
   const avatar = nivelInfo ? avatarDoNivel(nivelInfo.nivel) : null;
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-main)', paddingBottom: '90px' }}>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(145deg, #00875A 0%, #003366 100%)',
+      paddingBottom: '90px',
+      fontFamily: "'Inter', sans-serif",
+    }}>
       <div style={{ maxWidth: '450px', margin: '0 auto', padding: '20px 16px 0' }}>
-        <header style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+        {/* Header com fundo semi-transparente para contraste */}
+        <header style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          marginBottom: '18px',
+          backgroundColor: 'rgba(255,255,255,0.10)',
+          backdropFilter: 'blur(8px)',
+          padding: '10px 16px',
+          borderRadius: '24px',
+          border: '1px solid rgba(255,255,255,0.15)',
+        }}>
           <div
             onClick={onBack}
             style={{
-              width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'var(--bg-surface)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-              border: '1px solid var(--border-light)', flexShrink: 0,
+              width: '38px',
+              height: '38px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255,255,255,0.20)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              flexShrink: 0,
+              transition: 'background 0.2s',
             }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.35)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.20)'}
           >
-            <ArrowLeft size={17} style={{ color: 'var(--applime-dark-purple)' }} />
+            <ArrowLeft size={18} style={{ color: '#FFFFFF' }} />
           </div>
+
           <div style={{ flex: 1 }}>
             <h1 style={{
-              fontSize: '1.6rem',
+              fontSize: '2rem',
               fontWeight: 900,
-              color: 'var(--applime-dark-purple)',
               fontFamily: "'Ranchers', cursive",
-              letterSpacing: '-0.5px',
-              lineHeight: 1.1,
+              letterSpacing: '1px',
+              lineHeight: 1.2,
+              background: 'linear-gradient(135deg, #FFB800 0%, #FFFFFF 70%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              textShadow: '0 2px 8px rgba(0,0,0,0.15)',
             }}>
               Greena
             </h1>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>Sua relação honesta com o dinheiro</span>
+            <span style={{
+              fontSize: '0.7rem',
+              color: 'rgba(255,255,255,0.85)',
+              fontWeight: 500,
+              letterSpacing: '0.3px',
+              textTransform: 'uppercase',
+            }}>
+              Sua relação honesta com o dinheiro
+            </span>
           </div>
+
           {avatar && (
             <div
               onClick={() => setAbaAtiva('missoes')}
               style={{
-                display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: greena.jadeSoft,
-                padding: '5px 10px', borderRadius: '14px', cursor: 'pointer', flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                backgroundColor: 'rgba(255,255,255,0.20)',
+                padding: '6px 14px 6px 10px',
+                borderRadius: '30px',
+                cursor: 'pointer',
+                flexShrink: 0,
+                border: '1px solid rgba(255,255,255,0.20)',
+                backdropFilter: 'blur(4px)',
               }}
             >
-              <span style={{ fontSize: '1.05rem' }}>{avatar.emoji}</span>
-              <span style={{ fontSize: '0.74rem', fontWeight: 800, color: greena.jadeDeep }}>Nv.{nivelInfo.nivel}</span>
+              <span style={{ fontSize: '1.2rem' }}>{avatar.emoji}</span>
+              <span style={{
+                fontSize: '0.75rem',
+                fontWeight: 800,
+                color: '#FFFFFF',
+                letterSpacing: '0.3px',
+              }}>
+                Nv.{nivelInfo.nivel}
+              </span>
             </div>
           )}
         </header>
 
-        <main>
+        {/* Conteúdo com fundo branco semi-transparente para legibilidade */}
+        <main style={{
+          backgroundColor: 'rgba(255,255,255,0.92)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '28px',
+          padding: '20px 16px',
+          border: '1px solid rgba(255,255,255,0.30)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+        }}>
           <AbaAtual />
         </main>
       </div>
 
-      <nav
-        style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: 'var(--bg-surface)',
-          borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-around',
-          padding: '10px 4px calc(10px + env(safe-area-inset-bottom))', zIndex: 50,
-        }}
-      >
+      {/* Navegação inferior – ajustada para o fundo escuro */}
+      <nav style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        backdropFilter: 'blur(16px)',
+        borderTop: '1px solid rgba(255,255,255,0.10)',
+        display: 'flex',
+        justifyContent: 'space-around',
+        padding: '10px 4px calc(10px + env(safe-area-inset-bottom))',
+        zIndex: 50,
+      }}>
         {ABAS.map((aba) => {
           const Icone = aba.icone;
           const ativa = aba.id === abaAtiva;
@@ -96,13 +169,44 @@ export default function Greena({ onBack }) {
               key={aba.id}
               onClick={() => setAbaAtiva(aba.id)}
               style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
-                background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px',
-                color: ativa ? greena.jade : 'var(--text-muted)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '2px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px 8px',
+                color: ativa ? '#FFB800' : 'rgba(255,255,255,0.60)',
+                transition: 'color 0.2s, transform 0.1s',
+                position: 'relative',
+              }}
+              onMouseEnter={(e) => {
+                if (!ativa) e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
+              }}
+              onMouseLeave={(e) => {
+                if (!ativa) e.currentTarget.style.color = 'rgba(255,255,255,0.60)';
               }}
             >
-              <Icone size={20} strokeWidth={ativa ? 2.4 : 2} />
-              <span style={{ fontSize: '0.62rem', fontWeight: ativa ? 800 : 600 }}>{aba.label}</span>
+              {ativa && (
+                <div style={{
+                  position: 'absolute',
+                  top: '-6px',
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: '#FFB800',
+                }} />
+              )}
+              <Icone size={22} strokeWidth={ativa ? 2.6 : 2} stroke={ativa ? '#FFB800' : 'currentColor'} />
+              <span style={{
+                fontSize: '0.6rem',
+                fontWeight: ativa ? 800 : 600,
+                letterSpacing: '0.2px',
+                textTransform: 'uppercase',
+              }}>
+                {aba.label}
+              </span>
             </button>
           );
         })}
