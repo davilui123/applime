@@ -1,36 +1,39 @@
-// Paleta Greena — inspirada nas referências visuais do Banco do Brasil
-// Cores fortes, contraste alto, identidade própria
-
+// Paleta Greena — baseada nas suas cores
 export const greena = {
-  // Cores primárias
-  verde: '#00875A',        // principal — crescimento, saldo positivo, ações
-  verdeEscuro: '#006644',  // para hover, ênfase
-  verdeClaro: '#E6F5F0',   // fundos suaves
-  azul: '#003366',         // confiança, textos, cabeçalhos
-  azulEscuro: '#002244',   // para contraste
-  amarelo: '#FFB800',      // destaque, XP, conquistas, alertas
-  amareloClaro: '#FFF8E1',
-  vermelho: '#C0533E',     // dívida, risco, estresse
-  vermelhoClaro: '#F7E7E3',
-  cinza: '#6B7280',        // textos secundários
-  cinzaClaro: '#F3F4F6',   // fundos de cards, inputs
-  branco: '#FFFFFF',
+  // Suas cores principais
+  amarelo: '#fdfc30',
+  roxo: '#8052fe',
+  rosa: '#ff797f',
+  azul: '#4151d2',
+  roxoClaro: '#7f51fd',
+  azulClaro: '#e8fafd',
+  roxoEscuro: '#241458',
+
+  // Cores derivadas para compatibilidade
+  verde: '#00c853',
+  verdeEscuro: '#009624',
+  verdeClaro: '#e8fafd',
+  vermelho: '#ff797f',
+  vermelhoClaro: '#ffebee',
+  cinza: '#6b7280',
+  cinzaClaro: '#f3f4f6',
+  branco: '#ffffff',
   preto: '#111827',
 
-  // Fundos e superfícies (substituem as variáveis do hub)
-  bgMain: '#F5F8FA',       // fundo principal da tela
-  bgSurface: '#FFFFFF',    // cards, modais
-  borderLight: '#E5E7EB',  // bordas suaves
-  textMuted: '#6B7280',    // textos secundários
-  textDark: '#003366',     // textos principais
+  // Fundos e superfícies
+  bgMain: '#e8fafd',
+  bgSurface: '#ffffff',
+  borderLight: '#d1d5db',
+  textMuted: '#6b7280',
+  textDark: '#241458',
 
-  // Radar (mantido para compatibilidade, mas com novas cores)
+  // Radar (mantido)
   radarColors: {
-    saude: '#00875A',
-    risco: '#C0533E',
-    liquidez: '#003366',
-    liberdade: '#FFB800',
-    estresse: '#8B4A6B',
+    saude: '#00c853',
+    risco: '#ff797f',
+    liquidez: '#4151d2',
+    liberdade: '#fdfc30',
+    estresse: '#8052fe',
   },
 };
 
@@ -51,25 +54,25 @@ export function formatDataCurta(data) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 }
 
-// Estilos reutilizáveis com a nova cara
+// Estilos reutilizáveis
 export const cardStyle = {
-  backgroundColor: '#FFFFFF',
+  backgroundColor: '#ffffff',
   borderRadius: '20px',
-  border: '1px solid #E5E7EB',
-  boxShadow: '0 4px 16px rgba(0,51,102,0.06)',
+  border: '1px solid #d1d5db',
+  boxShadow: '0 4px 16px rgba(37, 20, 88, 0.08)',
   padding: '18px',
   transition: 'all 0.2s ease',
 };
 
-export const pillButtonStyle = (active, color = greena.verde) => ({
+export const pillButtonStyle = (active, color = '#00c853') => ({
   padding: '8px 18px',
   borderRadius: '30px',
   fontSize: '0.78rem',
   fontWeight: 700,
   cursor: 'pointer',
-  border: `2px solid ${active ? color : '#E5E7EB'}`,
+  border: `2px solid ${active ? color : '#d1d5db'}`,
   backgroundColor: active ? color : 'transparent',
-  color: active ? '#FFFFFF' : greena.azul,
+  color: active ? '#ffffff' : '#241458',
   transition: 'all 0.2s ease',
   boxShadow: active ? `0 4px 12px ${color}44` : 'none',
   whiteSpace: 'nowrap',

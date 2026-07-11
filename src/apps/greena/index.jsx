@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, LayoutDashboard, ArrowLeftRight, Target, ShieldAlert, Wallet2, Trophy, User } from 'lucide-react';
-
-// Importa a fonte Ranchers
 import '@fontsource/ranchers';
 
 import Dashboard from './components/Dashboard';
@@ -42,28 +40,27 @@ export default function Greena({ onBack }) {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(145deg, #00875A 0%, #003366 100%)',
+      background: 'linear-gradient(145deg, #8052fe 0%, #241458 100%)',
       paddingBottom: '90px',
       fontFamily: "'Inter', sans-serif",
     }}>
       <div style={{ maxWidth: '450px', margin: '0 auto', padding: '20px 16px 0' }}>
-        {/* Header com fundo semi-transparente para contraste */}
         <header style={{
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
           marginBottom: '18px',
-          backgroundColor: 'rgba(255,255,255,0.10)',
-          backdropFilter: 'blur(8px)',
-          padding: '10px 16px',
-          borderRadius: '24px',
-          border: '1px solid rgba(255,255,255,0.15)',
+          backgroundColor: 'rgba(255,255,255,0.12)',
+          backdropFilter: 'blur(12px)',
+          padding: '12px 18px',
+          borderRadius: '28px',
+          border: '1px solid rgba(255,255,255,0.20)',
         }}>
           <div
             onClick={onBack}
             style={{
-              width: '38px',
-              height: '38px',
+              width: '40px',
+              height: '40px',
               borderRadius: '50%',
               backgroundColor: 'rgba(255,255,255,0.20)',
               display: 'flex',
@@ -76,7 +73,7 @@ export default function Greena({ onBack }) {
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.35)'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.20)'}
           >
-            <ArrowLeft size={18} style={{ color: '#FFFFFF' }} />
+            <ArrowLeft size={18} style={{ color: '#ffffff' }} />
           </div>
 
           <div style={{ flex: 1 }}>
@@ -86,20 +83,23 @@ export default function Greena({ onBack }) {
               fontFamily: "'Ranchers', cursive",
               letterSpacing: '1px',
               lineHeight: 1.2,
-              background: 'linear-gradient(135deg, #FFB800 0%, #FFFFFF 70%)',
+              background: 'linear-gradient(135deg, #01ccff 0%, #fdfc30 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
-              textShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              textShadow: '0 4px 12px rgba(253, 252, 48, 0.3)',
+              display: 'inline-block',
             }}>
               Greena
             </h1>
             <span style={{
               fontSize: '0.7rem',
-              color: 'rgba(255,255,255,0.85)',
+              color: 'rgba(255,255,255,0.9)',
               fontWeight: 500,
               letterSpacing: '0.3px',
               textTransform: 'uppercase',
+              display: 'block',
+              marginTop: '2px',
             }}>
               Sua relação honesta com o dinheiro
             </span>
@@ -125,7 +125,7 @@ export default function Greena({ onBack }) {
               <span style={{
                 fontSize: '0.75rem',
                 fontWeight: 800,
-                color: '#FFFFFF',
+                color: '#ffffff',
                 letterSpacing: '0.3px',
               }}>
                 Nv.{nivelInfo.nivel}
@@ -134,28 +134,26 @@ export default function Greena({ onBack }) {
           )}
         </header>
 
-        {/* Conteúdo com fundo branco semi-transparente para legibilidade */}
         <main style={{
           backgroundColor: 'rgba(255,255,255,0.92)',
-          backdropFilter: 'blur(10px)',
+          backdropFilter: 'blur(12px)',
           borderRadius: '28px',
           padding: '20px 16px',
           border: '1px solid rgba(255,255,255,0.30)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
         }}>
           <AbaAtual />
         </main>
       </div>
 
-      {/* Navegação inferior – ajustada para o fundo escuro */}
       <nav style={{
         position: 'fixed',
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: 'rgba(255,255,255,0.08)',
-        backdropFilter: 'blur(16px)',
-        borderTop: '1px solid rgba(255,255,255,0.10)',
+        backgroundColor: 'rgba(255,255,255,0.18)',
+        backdropFilter: 'blur(20px)',
+        borderTop: '1px solid rgba(255,255,255,0.20)',
         display: 'flex',
         justifyContent: 'space-around',
         padding: '10px 4px calc(10px + env(safe-area-inset-bottom))',
@@ -177,15 +175,15 @@ export default function Greena({ onBack }) {
                 border: 'none',
                 cursor: 'pointer',
                 padding: '4px 8px',
-                color: ativa ? '#FFB800' : 'rgba(255,255,255,0.60)',
+                color: ativa ? '#fdfc30' : 'rgba(255,255,255,0.70)',
                 transition: 'color 0.2s, transform 0.1s',
                 position: 'relative',
               }}
               onMouseEnter={(e) => {
-                if (!ativa) e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
+                if (!ativa) e.currentTarget.style.color = 'rgba(255,255,255,0.95)';
               }}
               onMouseLeave={(e) => {
-                if (!ativa) e.currentTarget.style.color = 'rgba(255,255,255,0.60)';
+                if (!ativa) e.currentTarget.style.color = 'rgba(255,255,255,0.70)';
               }}
             >
               {ativa && (
@@ -195,10 +193,10 @@ export default function Greena({ onBack }) {
                   width: '6px',
                   height: '6px',
                   borderRadius: '50%',
-                  backgroundColor: '#FFB800',
+                  backgroundColor: '#fdfc30',
                 }} />
               )}
-              <Icone size={22} strokeWidth={ativa ? 2.6 : 2} stroke={ativa ? '#FFB800' : 'currentColor'} />
+              <Icone size={22} strokeWidth={ativa ? 2.6 : 2} stroke={ativa ? '#fdfc30' : 'currentColor'} />
               <span style={{
                 fontSize: '0.6rem',
                 fontWeight: ativa ? 800 : 600,
