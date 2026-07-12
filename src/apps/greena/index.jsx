@@ -89,7 +89,7 @@ export default function Greena({ onBack }) {
               <ArrowLeft size={20} style={{ color: '#241458' }} />
             </div>
 
-            <img src="/Greena.png" alt="Greena" style={{ height: '34px', width: 'auto', flexShrink: 0 }} />
+            <img src="/Greena.png" alt="Greena" style={{ height: '55px', width: 'auto', flexShrink: 0 }} />
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
