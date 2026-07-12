@@ -61,47 +61,38 @@ export default function Greena({ onBack }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          gap: '10px',
           marginBottom: '18px',
           backgroundColor: '#FFFFFF',
-          padding: '10px 14px',
+          padding: '12px 16px',
           borderRadius: '28px',
           boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
         }}>
-          <div
-            onClick={onBack}
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              backgroundColor: '#f3f4f6',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              flexShrink: 0,
-              transition: 'background 0.2s',
-              zIndex: 1,
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e5e7eb'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-          >
-            <ArrowLeft size={20} style={{ color: '#241458' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+            <div
+              onClick={onBack}
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: '#f3f4f6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                flexShrink: 0,
+                transition: 'background 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e5e7eb'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+            >
+              <ArrowLeft size={20} style={{ color: '#241458' }} />
+            </div>
+
+            <img src="/Greena.png" alt="Greena" style={{ height: '34px', width: 'auto', flexShrink: 0 }} />
           </div>
 
-          {/* Logo verdadeiramente centralizada — posição absoluta ignora a
-              largura desigual dos elementos dos lados */}
-          <div style={{
-            position: 'absolute',
-            left: '50%',
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-            display: 'flex',
-            alignItems: 'center',
-          }}>
-            <img src="/Greena.png" alt="Greena" style={{ height: '62px', width: 'auto' }} />
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', zIndex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
             {streak?.streak_atual > 0 && (
               <div style={{
                 display: 'flex', alignItems: 'center', gap: '3px', backgroundColor: '#fff7e0',

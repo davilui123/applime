@@ -172,7 +172,6 @@ export default function Contas() {
       {widgetAberto && connectToken && (
         <PluggyConnect
           connectToken={connectToken}
-          includeSandbox
           onSuccess={handleSucessoConexao}
           onError={(err) => { setErroConexao(err.message || 'Erro na conexão'); setWidgetAberto(false); }}
           onClose={() => setWidgetAberto(false)}
