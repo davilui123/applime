@@ -21,6 +21,7 @@ async function getUserId() {
   return data?.user?.id || null;
 }
 
+// Hook genérico de CRUD por tabela, escopado ao usuário logado
 function useGreenaTable(tabela, orderBy = 'created_at', ascending = false) {
   const [dados, setDados] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -85,6 +86,7 @@ export function useContas() {
 export function useCategorias() {
   const tabela = useGreenaTable('greena_categorias', 'nome', true);
 
+  // Garante categorias padrão na primeira vez que o usuário abre o Greena
   useEffect(() => {
     if (tabela.loading) return;
     if (tabela.dados.length > 0) return;
@@ -117,7 +119,9 @@ export function useAssinaturas() {
   return useGreenaTable('greena_assinaturas', 'dia_vencimento', true);
 }
 
-// ---------- PERFIL ----------
+// ---------------------------------------------------------
+// PERFIL — XP total e nível (uma linha por usuário)
+// ---------------------------------------------------------
 export function usePerfil() {
   const [perfil, setPerfil] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -159,10 +163,10 @@ export function usePerfil() {
   }, [perfil]);
 
   const atualizar = useCallback(async (patch) => {
-    if (!perfil) return;
+    if (!perfil) return { error: 'Perfil ainda não carregado' };
     const { data, error } = await supabase
       .from('greena_perfil')
-      .update(patch)
+      .update({ ...patch, updated_at: new Date().toISOString() })
       .eq('user_id', perfil.user_id)
       .select()
       .single();
@@ -173,7 +177,66 @@ export function usePerfil() {
   return { perfil, loading, adicionarXP, atualizar, recarregar: carregar };
 }
 
-// ---------- STREAKS ----------
+// ---------------------------------------------------------
+// SCORE HISTÓRICO — evolução mensal do Radar Financeiro
+// ---------------------------------------------------------
+export function useScoreHistorico() {
+  return useGreenaTable('greena_score_historico', 'mes_referencia', true);
+}
+
+// Calcula o Radar/Score/Patrimônio de hoje e grava o snapshot do mês atual.
+// Chamado ao abrir a tela de Perfil — se o mês já tem snapshot, ele é atualizado
+// (não duplica), então pode ser chamado quantas vezes quiser no mesmo mês.
+export async function salvarScoreMesAtual() {
+  const userId = await getUserId();
+  if (!userId) return { error: 'Sem usuário logado' };
+
+  const [{ data: contas }, { data: transacoes }, { data: dividas }, { data: metas }] = await Promise.all([
+    supabase.from('greena_contas').select('*').eq('user_id', userId),
+    supabase.from('greena_transacoes').select('*').eq('user_id', userId),
+    supabase.from('greena_dividas').select('*').eq('user_id', userId),
+    supabase.from('greena_metas').select('*').eq('user_id', userId),
+  ]);
+
+  const radar = calcularRadar({ contas: contas || [], transacoes: transacoes || [], dividas: dividas || [], metas: metas || [] });
+  const score = calcularScoreOrganizacao(radar);
+  const patrimonio = patrimonioLiquido(contas || [], transacoes || [], dividas || []);
+
+  const hoje = new Date();
+  const mesReferencia = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0, 10);
+
+  const { data: snapshot, error } = await supabase
+    .from('greena_score_historico')
+    .upsert(
+      [{
+        user_id: userId,
+        mes_referencia: mesReferencia,
+        score_organizacao: score,
+        saude: radar.saude,
+        risco: radar.risco,
+        liquidez: radar.liquidez,
+        liberdade_financeira: radar.liberdade,
+        estresse: radar.estresse,
+        patrimonio_liquido: patrimonio,
+      }],
+      { onConflict: 'user_id,mes_referencia' }
+    )
+    .select()
+    .single();
+
+  if (!error) {
+    await supabase
+      .from('greena_perfil')
+      .update({ score_organizacao: score, patrimonio_liquido: patrimonio })
+      .eq('user_id', userId);
+  }
+
+  return { data: snapshot, error };
+}
+
+// ---------------------------------------------------------
+// STREAKS — múltiplos tipos por usuário (ex: 'abertura_diaria')
+// ---------------------------------------------------------
 export function useStreak(tipo) {
   const [streak, setStreak] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -211,6 +274,7 @@ export function useStreak(tipo) {
     if (!userId) return;
     const hoje = new Date().toISOString().slice(0, 10);
 
+    // relê o valor mais recente pra evitar corrida entre abas/telas
     const { data: atual } = await supabase
       .from('greena_streaks')
       .select('*')
@@ -242,7 +306,9 @@ export function useStreak(tipo) {
   return { streak, loading, registrarHoje, recarregar: carregar };
 }
 
-// ---------- MISSÕES ----------
+// ---------------------------------------------------------
+// MISSÕES — catálogo (templates globais + personalizadas do usuário)
+// ---------------------------------------------------------
 export function useMissoes() {
   const [dados, setDados] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -282,7 +348,9 @@ export function useMissoes() {
   return { dados, loading, criarMissaoPersonalizada, recarregar: carregar };
 }
 
-// ---------- MISSÕES USUÁRIO ----------
+// ---------------------------------------------------------
+// MISSÕES DO USUÁRIO — instâncias aceitas, com progresso
+// ---------------------------------------------------------
 export function useMissoesUsuario() {
   const tabela = useGreenaTable('greena_missoes_usuario', 'created_at', false);
 
@@ -310,57 +378,4 @@ export function useMissoesUsuario() {
   }, [tabela]);
 
   return { ...tabela, aceitarMissao, registrarProgresso, abandonarMissao };
-}
-
-// ---------- SCORE HISTÓRICO ----------
-export function useScoreHistorico() {
-  return useGreenaTable('greena_score_historico', 'mes_referencia', true);
-}
-
-export async function salvarScoreMesAtual() {
-  const userId = await getUserId();
-  if (!userId) return;
-
-  const hoje = new Date();
-  const mesReferencia = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0, 10);
-
-  const { data: existente } = await supabase
-    .from('greena_score_historico')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('mes_referencia', mesReferencia)
-    .maybeSingle();
-
-  if (existente) return;
-
-  const contas = await supabase.from('greena_contas').select('*').eq('user_id', userId);
-  const transacoes = await supabase.from('greena_transacoes').select('*').eq('user_id', userId);
-  const dividas = await supabase.from('greena_dividas').select('*').eq('user_id', userId);
-  const metas = await supabase.from('greena_metas').select('*').eq('user_id', userId);
-
-  const radar = calcularRadar({
-    contas: contas.data || [],
-    transacoes: transacoes.data || [],
-    dividas: dividas.data || [],
-    metas: metas.data || [],
-  });
-  const score = calcularScoreOrganizacao(radar);
-  const patrimonio = patrimonioLiquido(contas.data || [], transacoes.data || [], dividas.data || []);
-
-  await supabase.from('greena_score_historico').insert({
-    user_id: userId,
-    mes_referencia: mesReferencia,
-    score_organizacao: score,
-    saude: radar.saude,
-    risco: radar.risco,
-    liquidez: radar.liquidez,
-    liberdade_financeira: radar.liberdade,
-    estresse: radar.estresse,
-    patrimonio_liquido: patrimonio,
-  });
-
-  await supabase
-    .from('greena_perfil')
-    .update({ score_organizacao: score, patrimonio_liquido: patrimonio })
-    .eq('user_id', userId);
 }

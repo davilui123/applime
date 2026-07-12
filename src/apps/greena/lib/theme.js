@@ -35,6 +35,24 @@ export const greena = {
     liberdade: '#fdfc30',
     estresse: '#8052fe',
   },
+
+  // Aliases de compatibilidade — Dashboard/Transacoes/Metas/Dividas/Contas/Missoes
+  // ainda chamam greena.jade, greena.terracotta etc. Mapeados pra nova paleta
+  // pra não quebrar nada: roxo assume o papel de cor primária/interativa (era o
+  // verde antes), verde/vermelho seguem como positivo/negativo, amarelo como XP.
+  jade: '#8052fe',
+  jadeSoft: '#e8fafd',
+  jadeDeep: '#241458',
+  terracotta: '#ff797f',
+  terracottaSoft: '#ffebee',
+  slateBlue: '#4151d2',
+  slateBlueSoft: '#e8fafd',
+  gold: '#fdfc30',
+  goldSoft: '#fffde7',
+  // Positivo/negativo "de verdade" (valores de receita/despesa), separado do
+  // roxo que agora é só a cor de marca/interação:
+  positivo: '#00c853',
+  negativo: '#ff797f',
 };
 
 // Formatações
