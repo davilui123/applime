@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Plus, X, Trash2, Link2 } from 'lucide-react';
+import { PluggyConnect } from 'react-pluggy-connect';
 import { useContas, useTransacoes } from '../hooks/useGreenaData';
 import { saldoDaConta } from '../lib/financeEngine';
 import { greena, formatBRL, cardStyle, pillButtonStyle } from '../lib/theme';
+import { supabase } from '../../../lib/supabaseClient';
 
 const TIPOS_CONTA = [
   { valor: 'corrente', label: 'Conta corrente', icone: '🏦' },
@@ -29,7 +31,7 @@ function ModalNovaConta({ onClose, onSalvar }) {
       instituicao: instituicao.trim() || null,
       saldo_inicial: Number(saldoInicial) || 0,
       icone: tipoInfo.icone,
-      cor: greena.verde,
+      cor: greena.jade,
       origem: 'manual',
     });
     setSalvando(false);
@@ -37,7 +39,7 @@ function ModalNovaConta({ onClose, onSalvar }) {
   }
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,51,102,0.25)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(18,63,48,0.25)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
       <div onClick={(e) => e.stopPropagation()} style={{ backgroundColor: 'var(--bg-surface)', width: '100%', maxWidth: '450px', borderRadius: '24px 24px 0 0', padding: '20px', maxHeight: '88vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--applime-dark-purple)' }}>Nova conta</h3>
@@ -47,7 +49,7 @@ function ModalNovaConta({ onClose, onSalvar }) {
         <label style={labelStyle}>Tipo</label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
           {TIPOS_CONTA.map((t) => (
-            <button key={t.valor} onClick={() => setTipo(t.valor)} style={pillButtonStyle(tipo === t.valor, greena.verde)}>
+            <button key={t.valor} onClick={() => setTipo(t.valor)} style={pillButtonStyle(tipo === t.valor, greena.jade)}>
               {t.icone} {t.label}
             </button>
           ))}
@@ -65,7 +67,7 @@ function ModalNovaConta({ onClose, onSalvar }) {
         <button
           disabled={salvando}
           onClick={handleSalvar}
-          style={{ width: '100%', marginTop: '6px', padding: '13px', borderRadius: '14px', border: 'none', backgroundColor: greena.verde, color: '#fff', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', opacity: salvando ? 0.6 : 1 }}
+          style={{ width: '100%', marginTop: '6px', padding: '13px', borderRadius: '14px', border: 'none', backgroundColor: greena.jade, color: '#fff', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', opacity: salvando ? 0.6 : 1 }}
         >
           {salvando ? 'Salvando…' : 'Adicionar conta'}
         </button>
@@ -78,9 +80,61 @@ const labelStyle = { fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-mu
 const inputStyle = { width: '100%', padding: '11px 12px', borderRadius: '12px', border: '1px solid var(--border-light)', fontSize: '0.88rem', marginBottom: '14px', boxSizing: 'border-box', backgroundColor: 'var(--bg-main)', color: 'var(--applime-dark-purple)' };
 
 export default function Contas() {
-  const { dados: contas, loading, inserir, remover } = useContas();
-  const { dados: transacoes } = useTransacoes();
+  const { dados: contas, loading, inserir, remover, recarregar } = useContas();
+  const { dados: transacoes, recarregar: recarregarTransacoes } = useTransacoes();
   const [modalAberto, setModalAberto] = useState(false);
+  const [widgetAberto, setWidgetAberto] = useState(false);
+  const [connectToken, setConnectToken] = useState(null);
+  const [conectando, setConectando] = useState(false);
+  const [sincronizando, setSincronizando] = useState(false);
+  const [erroConexao, setErroConexao] = useState(null);
+
+  async function iniciarConexao() {
+    setConectando(true);
+    setErroConexao(null);
+    try {
+      const { data: sessao } = await supabase.auth.getSession();
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pluggy-connect-token`,
+        { headers: { Authorization: `Bearer ${sessao.session.access_token}` } }
+      );
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json.error || 'Falha ao gerar token de conexão');
+      setConnectToken(json.connectToken);
+      setWidgetAberto(true);
+    } catch (err) {
+      setErroConexao(err.message);
+    } finally {
+      setConectando(false);
+    }
+  }
+
+  async function handleSucessoConexao({ item }) {
+    setWidgetAberto(false);
+    setSincronizando(true);
+    try {
+      const { data: sessao } = await supabase.auth.getSession();
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pluggy-sync`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${sessao.session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ itemId: item.id }),
+        }
+      );
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json.error || 'Falha ao sincronizar');
+      await recarregar();
+      await recarregarTransacoes();
+    } catch (err) {
+      setErroConexao(err.message);
+    } finally {
+      setSincronizando(false);
+    }
+  }
 
   return (
     <div>
@@ -88,7 +142,7 @@ export default function Contas() {
         <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--applime-dark-purple)' }}>Suas contas</h3>
         <button
           onClick={() => setModalAberto(true)}
-          style={{ width: '38px', height: '38px', borderRadius: '12px', border: 'none', backgroundColor: greena.verde, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+          style={{ width: '38px', height: '38px', borderRadius: '12px', border: 'none', backgroundColor: greena.jade, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
         >
           <Plus size={20} />
         </button>
@@ -102,13 +156,28 @@ export default function Contas() {
           <span style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--applime-dark-purple)' }}>Saldo consolidado (Open Finance)</span>
         </div>
         <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '10px' }}>
-          Vamos conectar seus bancos via Pluggy pra puxar saldo automaticamente. Falta só o back-end
-          que gera o token de conexão (Supabase Edge Function) — por enquanto, cadastre suas contas manualmente abaixo.
+          Conecte seu banco pela Pluggy pra importar saldo e extrato automaticamente. Suas credenciais bancárias
+          nunca passam pelo Greena — a conexão é direta e criptografada.
         </p>
-        <button disabled style={{ ...pillButtonStyle(false, greena.slateBlue), opacity: 0.5, cursor: 'not-allowed' }}>
-          Conectar banco — em breve
+        <button
+          onClick={iniciarConexao}
+          disabled={conectando || sincronizando}
+          style={{ ...pillButtonStyle(false, greena.slateBlue), opacity: conectando || sincronizando ? 0.6 : 1 }}
+        >
+          {conectando ? 'Abrindo…' : sincronizando ? 'Sincronizando…' : 'Conectar banco'}
         </button>
+        {erroConexao && <p style={{ fontSize: '0.74rem', color: greena.terracotta, marginTop: '8px' }}>{erroConexao}</p>}
       </div>
+
+      {widgetAberto && connectToken && (
+        <PluggyConnect
+          connectToken={connectToken}
+          includeSandbox
+          onSuccess={handleSucessoConexao}
+          onError={(err) => { setErroConexao(err.message || 'Erro na conexão'); setWidgetAberto(false); }}
+          onClose={() => setWidgetAberto(false)}
+        />
+      )}
 
       {loading && <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Carregando contas…</p>}
 
@@ -121,7 +190,7 @@ export default function Contas() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {contas.map((c) => (
           <div key={c.id} style={{ ...cardStyle, padding: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '38px', height: '38px', borderRadius: '11px', backgroundColor: `${greena.verde}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>
+            <div style={{ width: '38px', height: '38px', borderRadius: '11px', backgroundColor: `${greena.jade}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>
               {c.icone}
             </div>
             <div style={{ flex: 1 }}>
